@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MOVIEHUSTLER - Locadora Virtual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="../src/style.css" />
+</head>
+<body>
+  <div class="barra-topo-flutuante">
+    <div class="area-conta" id="area-conta">
+      <div class="botoes-deslogado" id="botoes-deslogado">
+        <button type="button" class="botao-criar-conta" id="botao-criar-conta">Criar conta</button>
+        <button type="button" class="botao-entrar" id="botao-entrar">Entrar</button>
+      </div>
+
+      <div class="perfil-wrap" id="perfil-wrap" hidden>
+        <button type="button" class="botao-perfil" id="botao-perfil" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar-perfil" id="avatar-perfil"></span>
+          <span id="nome-perfil"></span>
+        </button>
+
+        <div class="menu-perfil" id="menu-perfil" hidden>
+          <button type="button" class="item-menu-perfil" data-acao="perfil">Perfil</button>
+          <button type="button" class="item-menu-perfil" data-acao="pedidos">Pedidos</button>
+          <button type="button" class="item-menu-perfil" data-acao="favoritos">Favoritos</button>
+          <button type="button" class="item-menu-perfil" data-acao="configuracoes">Configurações</button>
+          <button type="button" class="item-menu-perfil item-sair" data-acao="sair">Sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="botao-carrinho" id="botao-carrinho" aria-label="Ver carrinho">
+    <svg class="icone-carrinho" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="9" cy="20" r="1.4" fill="#000000" stroke="none" />
+      <circle cx="18" cy="20" r="1.4" fill="#000000" stroke="none" />
+      <path d="M2.5 3h2.2l2.1 12.3a2 2 0 0 0 2 1.7h8.6a2 2 0 0 0 2-1.6l1.5-7.9H6" />
+    </svg>
+    <span class="carrinho-contador" id="carrinho-contador" hidden>0</span>
+  </button>
+
+  <header class="topo">
+    <div class="topo-conteudo">
+      <button type="button" class="logo" id="logo-botao" aria-label="Voltar para a página inicial">
+        <span class="logo-watch">MOVIE</span><span class="logo-ust">HUSTLER</span>
+      </button>
+      <p class="slogan">sua locadora virtual desde os anos 2000</p>
+    </div>
+  </header>
+
+  <div class="barra-busca">
+    <input
+      type="text"
+      id="campo-busca"
+      class="campo-busca"
+      placeholder="Buscar filme pelo título..."
+    />
+  </div>
+
+  <div class="filtros-extra">
+    <select id="ordenar" class="select-ordenar">
+      <option value="padrao">Ordenar por...</option>
+      <option value="preco-asc">Preço: menor primeiro</option>
+      <option value="preco-desc">Preço: maior primeiro</option>
+      <option value="ano-desc">Ano: mais recente</option>
+      <option value="ano-asc">Ano: mais antigo</option>
+      <option value="nome">Nome (A-Z)</option>
+    </select>
+  </div>
+
+  <nav class="categorias" id="categorias"></nav>
+
+  <main class="conteudo">
+    <h2 class="titulo-secao" id="titulo-secao">Catálogo completo</h2>
+    <div class="grade-filmes" id="grade-filmes"></div>
+  </main>
+
+  <footer class="rodape">
+    <p>MOVIEHUSTLER &copy; 2000 — seja bem-vindo(a) de volta.</p>
+  </footer>
+
+  <div class="modal-fundo" id="modal-fundo">
+    <div class="modal-caixa" id="modal-caixa">
+      <button type="button" class="modal-fechar" id="modal-fechar" aria-label="Fechar">&times;</button>
+
+      <div class="modal-poster" id="modal-poster"></div>
+
+      <div class="modal-info">
+        <h2 class="modal-nome-filme" id="modal-titulo"></h2>
+
+        <ul class="modal-detalhes">
+          <li id="modal-duracao"></li>
+          <li id="modal-diretor"></li>
+          <li id="modal-genero"></li>
+        </ul>
+
+        <p class="modal-sinopse" id="modal-sinopse"></p>
+
+        <div class="modal-streamings">
+          <span class="modal-streamings-label">Disponível em:</span>
+          <div class="modal-streamings-lista" id="modal-streamings-lista"></div>
+        </div>
+
+        <div class="modal-aluguel">
+          <span class="modal-preco" id="modal-preco"></span>
+
+          <label class="modal-label-agencia" for="select-agencia">Retirar na agência:</label>
+          <select class="select-agencia" id="select-agencia"></select>
+
+          <button type="button" class="botao-alugar" id="botao-alugar">Alugar agora</button>
+
+          <p class="mensagem-aluguel" id="mensagem-aluguel" hidden></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-fundo" id="conta-fundo">
+    <div class="modal-caixa conta-caixa" id="conta-caixa">
+      <button type="button" class="modal-fechar" id="conta-fechar" aria-label="Fechar">&times;</button>
+
+      <div class="conta-marca">
+        <span class="conta-marca-watch">MOVIE</span><span class="conta-marca-ust">HUSTLER</span>
+      </div>
+
+      <div class="conta-abas">
+        <button type="button" class="aba-conta ativa" id="aba-login">Entrar</button>
+        <button type="button" class="aba-conta" id="aba-cadastro">Criar conta</button>
+      </div>
+
+      <form class="form-conta" id="form-login">
+        <p class="conta-subtitulo">Bem-vindo de volta! Entre com sua conta.</p>
+
+        <div class="campo-conta">
+          <label for="login-email">E-mail</label>
+          <input type="email" id="login-email" placeholder="voce@email.com" required />
+        </div>
+
+        <div class="campo-conta">
+          <label for="login-senha">Senha</label>
+          <input type="password" id="login-senha" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" class="botao-conta-enviar">Entrar</button>
+        <p class="mensagem-conta" id="login-mensagem" hidden></p>
+      </form>
+
+      <form class="form-conta" id="form-cadastro" hidden>
+        <p class="conta-subtitulo">Crie sua conta e comece a alugar.</p>
+
+        <div class="campo-conta">
+          <label for="cadastro-nome">Nome</label>
+          <input type="text" id="cadastro-nome" placeholder="Seu nome" required />
+        </div>
+
+        <div class="campo-conta">
+          <label for="cadastro-email">E-mail</label>
+          <input type="email" id="cadastro-email" placeholder="voce@email.com" required />
+        </div>
+
+        <div class="campo-conta">
+          <label for="cadastro-senha">Senha</label>
+          <input type="password" id="cadastro-senha" placeholder="mínimo 6 caracteres" required minlength="6" />
+
+          <div class="medidor-senha" id="medidor-senha" hidden>
+            <div class="medidor-senha-barra">
+              <span class="medidor-senha-preenchimento" id="medidor-senha-preenchimento"></span>
+            </div>
+            <span class="medidor-senha-texto" id="medidor-senha-texto"></span>
+          </div>
+        </div>
+
+        <button type="submit" class="botao-conta-enviar">Criar conta</button>
+        <p class="mensagem-conta" id="cadastro-mensagem" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-fundo" id="painel-fundo">
+    <div class="modal-caixa painel-caixa" id="painel-caixa">
+      <button type="button" class="modal-fechar" id="painel-fechar" aria-label="Fechar">&times;</button>
+      <h2 class="painel-titulo" id="painel-titulo"></h2>
+      <div class="painel-conteudo" id="painel-conteudo"></div>
+    </div>
+  </div>
+
+  <div class="modal-fundo" id="carrinho-fundo">
+    <div class="modal-caixa carrinho-caixa" id="carrinho-caixa">
+      <button type="button" class="modal-fechar" id="carrinho-fechar" aria-label="Fechar">&times;</button>
+
+      <h2 class="carrinho-titulo">Seu carrinho</h2>
+
+      <div class="carrinho-lista" id="carrinho-lista"></div>
+
+      <div class="carrinho-rodape">
+        <span class="carrinho-total" id="carrinho-total"></span>
+        <button type="button" class="botao-finalizar" id="botao-finalizar" disabled>Finalizar aluguel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,988 @@
+<title>MOVIEHUSTLER JS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #f6f4ee;
+    --surface: #ffffff;
+    --surface-raised: #fffdf9;
+    --text: #191f36;
+    --text-muted: #5a6178;
+    --text-faint: #8b91a4;
+    --border: #e4e1d4;
+    --border-strong: #d3cfc0;
+    --accent: #1d4ed8;
+    --accent-ink: #14329c;
+    --accent-soft: #e8edfc;
+    --gold: #b8860b;
+    --gold-soft: #faf1d9;
+    --code-bg: #12182c;
+    --code-text: #e6e9f5;
+    --code-border: #232a44;
+    --code-comment: #8891b0;
+    --code-string: #f0c14b;
+    --code-keyword: #7ea3ff;
+    --code-fn: #7fd8a0;
+    --shadow: rgba(25, 31, 54, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1120;
+      --surface: #161c30;
+      --surface-raised: #1b2238;
+      --text: #e7e9f2;
+      --text-muted: #a2a8bd;
+      --text-faint: #6c7286;
+      --border: #262d47;
+      --border-strong: #333c5c;
+      --accent: #86a4ff;
+      --accent-ink: #c2d1ff;
+      --accent-soft: #1c2540;
+      --gold: #f0c14b;
+      --gold-soft: #2a2515;
+      --code-bg: #090c18;
+      --code-text: #dde2f2;
+      --code-border: #202744;
+      --code-comment: #6c7492;
+      --code-string: #f0c14b;
+      --code-keyword: #86a4ff;
+      --code-fn: #7fd8a0;
+      --shadow: rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0d1120;
+    --surface: #161c30;
+    --surface-raised: #1b2238;
+    --text: #e7e9f2;
+    --text-muted: #a2a8bd;
+    --text-faint: #6c7286;
+    --border: #262d47;
+    --border-strong: #333c5c;
+    --accent: #86a4ff;
+    --accent-ink: #c2d1ff;
+    --accent-soft: #1c2540;
+    --gold: #f0c14b;
+    --gold-soft: #2a2515;
+    --code-bg: #090c18;
+    --code-text: #dde2f2;
+    --code-border: #202744;
+    --code-comment: #6c7492;
+    --code-string: #f0c14b;
+    --code-keyword: #86a4ff;
+    --code-fn: #7fd8a0;
+    --shadow: rgba(0, 0, 0, 0.45);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 20px;
+  }
+
+  h1, h2, h3 {
+    font-family: "Newsreader", Georgia, serif;
+    color: var(--text);
+    text-wrap: balance;
+    font-weight: 600;
+  }
+
+  a { color: var(--accent); }
+
+  code, pre, .mono {
+    font-family: "IBM Plex Mono", "Consolas", monospace;
+  }
+
+  /* ---------- topo ---------- */
+
+  .cabecalho {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 3.5rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 1.1rem;
+  }
+
+  .cabecalho h1 {
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    margin: 0 0 0.6rem;
+    line-height: 1.12;
+  }
+
+  .cabecalho .subtitulo {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 62ch;
+    margin: 0 0 1.5rem;
+  }
+
+  .meta-linha {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* ---------- layout com indice lateral ---------- */
+
+  .corpo {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 760px);
+    gap: 3rem;
+    padding: 2.5rem 0 5rem;
+    justify-content: center;
+  }
+
+  .indice {
+    position: sticky;
+    top: 2.5rem;
+    align-self: start;
+    font-size: 0.85rem;
+  }
+
+  .indice-titulo {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.9rem;
+  }
+
+  .indice ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    border-left: 2px solid var(--border);
+  }
+
+  .indice a {
+    display: block;
+    padding: 0.1rem 0 0.1rem 0.9rem;
+    margin-left: -2px;
+    border-left: 2px solid transparent;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .indice a:hover {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .indice .num {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--gold);
+    margin-right: 0.4rem;
+  }
+
+  main { min-width: 0; }
+
+  /* ---------- secoes ---------- */
+
+  section.capitulo {
+    padding-top: 1rem;
+    margin-bottom: 3.2rem;
+    scroll-margin-top: 1.5rem;
+  }
+
+  .numero-capitulo {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--gold);
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+  }
+
+  section.capitulo h2 {
+    font-size: 1.7rem;
+    margin: 0.2rem 0 1rem;
+  }
+
+  section.capitulo h3 {
+    font-size: 1.15rem;
+    margin: 1.8rem 0 0.6rem;
+    color: var(--accent-ink);
+  }
+
+  section.capitulo p {
+    margin: 0 0 1rem;
+    max-width: 68ch;
+  }
+
+  section.capitulo ul, section.capitulo ol.lista {
+    margin: 0 0 1.1rem;
+    padding-left: 1.3rem;
+  }
+
+  section.capitulo li { margin-bottom: 0.45rem; }
+
+  strong { color: var(--text); }
+
+  .destaque {
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  /* ---------- callouts ---------- */
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    margin: 1.1rem 0;
+    font-size: 0.93rem;
+  }
+
+  .callout.ouro { border-left-color: var(--gold); background: var(--gold-soft); }
+
+  .callout-titulo {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .callout.ouro .callout-titulo { color: var(--gold); }
+
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ---------- blocos de codigo ---------- */
+
+  .bloco-codigo {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 10px;
+    margin: 1.1rem 0;
+    overflow: hidden;
+  }
+
+  .bloco-codigo-legenda {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--code-comment);
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--code-border);
+    letter-spacing: 0.02em;
+  }
+
+  .bloco-codigo pre {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.83rem;
+    line-height: 1.6;
+    color: var(--code-text);
+  }
+
+  .bloco-codigo code { font-family: inherit; }
+
+  .tok-com { color: var(--code-comment); font-style: italic; }
+  .tok-str { color: var(--code-string); }
+  .tok-kw { color: var(--code-keyword); }
+  .tok-fn { color: var(--code-fn); }
+
+  code.linha {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.86em;
+    color: var(--accent-ink);
+  }
+
+  /* ---------- tabela cola rapida ---------- */
+
+  .tabela-wrap { overflow-x: auto; margin: 1.1rem 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.87rem;
+    min-width: 480px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+
+  td.mono { font-family: "IBM Plex Mono", monospace; color: var(--accent-ink); font-size: 0.85rem; }
+
+  /* ---------- rodape ---------- */
+
+  footer {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2rem 0 4rem;
+    color: var(--text-faint);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---------- responsivo ---------- */
+
+  @media (max-width: 880px) {
+    .corpo {
+      grid-template-columns: 1fr;
+      padding-top: 1.5rem;
+    }
+
+    .indice {
+      position: static;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .indice ol { border-left: none; }
+    .indice a { padding-left: 0; }
+  }
+
+  @media (max-width: 480px) {
+    .cabecalho { padding-top: 4.2rem; }
+    section.capitulo h2 { font-size: 1.4rem; }
+  }
+</style>
+
+<header class="cabecalho">
+  <span class="eyebrow">Caderno de estudo · JavaScript</span>
+  <h1>Tudo que construímos em JS no MOVIEHUSTLER</h1>
+  <p class="subtitulo">
+    Um resumo detalhado de cada conceito de JavaScript estudado ao longo da construção da locadora virtual —
+    na ordem em que apareceram, com o código real do projeto como exemplo, não trechos genéricos.
+  </p>
+  <div class="meta-linha">
+    <span>8 capítulos</span>
+    <span>·</span>
+    <span>projeto: frontend/src/*.js</span>
+    <span>·</span>
+    <span>revisado com MDN Web Docs</span>
+  </div>
+</header>
+
+<div class="corpo">
+  <nav class="indice" aria-label="Índice">
+    <div class="indice-titulo">Nesta página</div>
+    <ol>
+      <li><a href="#dom"><span class="num">01</span>DOM: selecionar e criar</a></li>
+      <li><a href="#eventos"><span class="num">02</span>Eventos &amp; closures</a></li>
+      <li><a href="#arrays"><span class="num">03</span>Arrays funcionais</a></li>
+      <li><a href="#formularios"><span class="num">04</span>Formulários &amp; texto</a></li>
+      <li><a href="#localstorage"><span class="num">05</span>localStorage</a></li>
+      <li><a href="#async"><span class="num">06</span>Promises &amp; async/await</a></li>
+      <li><a href="#modulos"><span class="num">07</span>Módulos ES</a></li>
+      <li><a href="#padrao"><span class="num">08</span>O padrão geral</a></li>
+      <li><a href="#cola">Cola rápida</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="capitulo" id="dom">
+      <div class="numero-capitulo">01</div>
+      <h2>DOM: selecionar e criar elementos</h2>
+
+      <p>
+        Tudo no app começa buscando referências pra elementos que já existem no HTML e, a partir delas,
+        criando novos elementos dinamicamente. Essas duas operações aparecem em praticamente toda função do projeto.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js</div>
+        <pre><code><span class="tok-kw">const</span> containerGrade = document.getElementById(<span class="tok-str">"grade-filmes"</span>);
+<span class="tok-kw">const</span> card = document.createElement(<span class="tok-str">"article"</span>);
+card.className = <span class="tok-str">"card-filme"</span>;</code></pre>
+      </div>
+
+      <p>
+        <code class="linha">getElementById</code> busca um elemento já existente no HTML pelo atributo <code class="linha">id</code> —
+        usamos isso uma vez, no início de cada módulo, pra guardar a referência numa constante (não precisa buscar de novo depois).
+        <code class="linha">createElement</code> faz o oposto: fabrica um elemento novo, do zero, que ainda não existe em lugar nenhum da página
+        até você anexá-lo com <code class="linha">appendChild</code>.
+      </p>
+
+      <h3>Template literals no lugar de concatenação</h3>
+      <p>
+        Pra montar o HTML interno de um card, usamos <em>template literals</em> (crase + <code class="linha">${'{'}...{'}'}</code>)
+        em vez de somar strings com <code class="linha">+</code>:
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — criarCardFilme</div>
+        <pre><code>card.innerHTML = <span class="tok-str">`
+  &lt;div class="capa-placeholder"&gt;
+    &lt;span&gt;${filme.titulo}&lt;/span&gt;
+    &lt;span class="faixa-etaria"&gt;${filme.faixa}&lt;/span&gt;
+  &lt;/div&gt;
+`</span>;</code></pre>
+      </div>
+
+      <p>
+        Isso permite quebrar linha livremente dentro da string e interpolar variáveis com <code class="linha">${'{'}expressao{'}'}</code>
+        sem precisar escapar aspas ou concatenar pedaço por pedaço. É a mesma sintaxe usada nas Promises simuladas do <a href="#async">capítulo 06</a>.
+      </p>
+
+      <div class="callout">
+        <div class="callout-titulo">Duas formas de mexer no conteúdo de um elemento</div>
+        <p>
+          <code class="linha">.innerHTML</code> interpreta a string como HTML de verdade (cria elementos filhos) — usado quando
+          o conteúdo tem tags. <code class="linha">.textContent</code> trata tudo como texto puro, sem interpretar tags — mais
+          seguro quando o valor pode vir de fora (evita que alguém injete HTML malicioso sem querer). No modal, preenchemos
+          textos simples com <code class="linha">.textContent</code> (ex: <code class="linha">modalTitulo.textContent = filme.titulo</code>) e
+          só usamos <code class="linha">.innerHTML</code> quando realmente precisamos gerar tags novas.
+        </p>
+      </div>
+    </section>
+
+    <section class="capitulo" id="eventos">
+      <div class="numero-capitulo">02</div>
+      <h2>Eventos e closures</h2>
+
+      <p>
+        <code class="linha">addEventListener</code> liga uma função a um evento (clique, digitação, tecla) de um elemento.
+        A parte mais sutil do projeto está em <strong>como</strong> essas funções "lembram" de valores específicos —
+        isso se chama <span class="destaque">closure</span>.
+      </p>
+
+      <h3>O que é uma closure</h3>
+      <p>
+        Uma closure é quando uma função guarda acesso às variáveis que existiam ao seu redor no momento em que foi criada,
+        mesmo depois que a função externa já terminou de executar. Toda função em JavaScript forma uma closure automaticamente —
+        não é algo que você "liga"; é o comportamento padrão da linguagem.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">carrinho.js — renderizarCarrinho</div>
+        <pre><code><span class="tok-kw">for</span> (<span class="tok-kw">const</span> item <span class="tok-kw">of</span> carrinho) {
+  <span class="tok-kw">const</span> linha = document.createElement(<span class="tok-str">"div"</span>);
+  linha.innerHTML = <span class="tok-str">`...`</span>;
+
+  linha.querySelector(<span class="tok-str">".botao-remover-item"</span>).addEventListener(<span class="tok-str">"click"</span>, () =&gt; {
+    removerDoCarrinho(item.idCarrinho); <span class="tok-com">// "item" é lembrado por closure</span>
+  });
+
+  carrinhoLista.appendChild(linha);
+}</code></pre>
+      </div>
+
+      <p>
+        Se o carrinho tem 3 itens, esse loop cria 3 botões — e cada um recebe sua <strong>própria</strong> função de clique,
+        que fechou (fez closure) sobre o <code class="linha">item</code> daquela iteração específica. Clicar no botão do item 1
+        remove o item 1; clicar no do item 3 remove o item 3 — mesmo os três botões executando literalmente o mesmo código-fonte.
+      </p>
+
+      <div class="callout ouro">
+        <div class="callout-titulo">A pegadinha clássica: var em loops</div>
+        <p>
+          Isso só funciona porque o loop usa <code class="linha">const</code>. Com <code class="linha">var</code>, todas as
+          iterações compartilhariam a <strong>mesma</strong> variável (var tem escopo de função, não de bloco) — os três
+          botões acabariam removendo sempre o <em>último</em> item da lista, porque no momento do clique o loop já teria
+          terminado e <code class="linha">item</code> apontaria pro valor final. Isso foi um bug real e comum em JS antes do
+          ES6 introduzir <code class="linha">let</code>/<code class="linha">const</code> com escopo de bloco — cada iteração
+          de um loop com <code class="linha">let</code> ganha sua própria cópia da variável.
+        </p>
+      </div>
+
+      <h3>Por que uma arrow function "vazia" na frente do listener</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — criarBotaoCategoria</div>
+        <pre><code>botao.addEventListener(<span class="tok-str">"click"</span>, () =&gt; selecionarCategoria(nome));</code></pre>
+      </div>
+      <p>
+        Se fosse escrito <code class="linha">addEventListener("click", selecionarCategoria)</code>, o clique passaria o
+        <strong>objeto do evento</strong> como argumento pra <code class="linha">selecionarCategoria</code> — não o
+        <code class="linha">nome</code> da categoria. A arrow function intermediária existe só pra "prender" o valor certo de
+        <code class="linha">nome</code> e chamar a função com o argumento certo.
+      </p>
+
+      <h3>stopPropagation — parar um evento de "borbulhar"</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — botão de favorito dentro do card</div>
+        <pre><code>card.querySelector(<span class="tok-str">".botao-favorito"</span>).addEventListener(<span class="tok-str">"click"</span>, (evento) =&gt; {
+  evento.stopPropagation();
+  alternarFavorito(filme.id, renderizarFilmes);
+});
+
+card.addEventListener(<span class="tok-str">"click"</span>, () =&gt; abrirModal(filme));</code></pre>
+      </div>
+      <p>
+        Por padrão, um clique num elemento filho também dispara os listeners dos elementos pais (o evento "borbulha" —
+        <em>bubbling</em> — subindo pela árvore do DOM). O coração está <em>dentro</em> do card, e o card inteiro tem um
+        listener que abre o modal. Sem <code class="linha">stopPropagation()</code>, clicar no coração também abriria o modal
+        do filme — porque o clique borbulharia do botão até o card.
+      </p>
+    </section>
+
+    <section class="capitulo" id="arrays">
+      <div class="numero-capitulo">03</div>
+      <h2>Arrays funcionais: filter, find, sort</h2>
+
+      <p>
+        Três métodos de array carregam praticamente toda a lógica de dados do catálogo. Nenhum deles modifica o array
+        original por conta própria (exceto <code class="linha">sort</code>, que é a exceção importante).
+      </p>
+
+      <h3>.filter() — pegar vários, os que servem</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — renderizarFilmes</div>
+        <pre><code>filmes.filter((filme) =&gt; {
+  <span class="tok-kw">const</span> passaCategoria = categoriaAtual === <span class="tok-str">"Todos"</span> || filme.generos.includes(categoriaAtual);
+  <span class="tok-kw">const</span> passaBusca = termo === <span class="tok-str">""</span> || normalizarTexto(filme.titulo).includes(termo);
+  <span class="tok-kw">const</span> passaFavoritos = !somenteFavoritos || ehFavorito(filme.id);
+  <span class="tok-kw">return</span> passaCategoria &amp;&amp; passaBusca &amp;&amp; passaFavoritos;
+});</code></pre>
+      </div>
+      <p>
+        Percorre o array original e devolve um <strong>array novo</strong>, só com os itens em que a função passada
+        devolveu <code class="linha">true</code>. O mesmo mecanismo serve pra excluir, invertendo a condição — é como
+        removemos um item do carrinho: <code class="linha">carrinho.filter(item =&gt; item.idCarrinho !== idCarrinho)</code>
+        ("mantenha todos, menos esse").
+      </p>
+
+      <h3>.find() — pegar um só, o primeiro que serve</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">modal.js — confirmarAluguel</div>
+        <pre><code><span class="tok-kw">const</span> agenciaEscolhida = AGENCIAS.find((a) =&gt; a.id === <span class="tok-fn">Number</span>(selectAgencia.value));</code></pre>
+      </div>
+      <p>
+        Primo do <code class="linha">filter</code>, mas devolve só o primeiro elemento que bate na condição (ou
+        <code class="linha">undefined</code>, se ninguém bater) — não um array. <code class="linha">selectAgencia.value</code>
+        vem como <em>string</em> do HTML (todo valor de formulário é texto), por isso o <code class="linha">Number(...)</code>:
+        sem essa conversão, <code class="linha">"1" === 1</code> é <code class="linha">false</code>, e o <code class="linha">find</code>
+        nunca acharia a agência certa.
+      </p>
+
+      <h3>.sort() — a exceção que muda o array original</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — ordenarFilmes</div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">ordenarFilmes</span>(lista, criterio) {
+  <span class="tok-kw">const</span> copia = [...lista]; <span class="tok-com">// cópia — sort() muta o array original!</span>
+
+  <span class="tok-kw">switch</span> (criterio) {
+    <span class="tok-kw">case</span> <span class="tok-str">"preco-asc"</span>:
+      <span class="tok-kw">return</span> copia.sort((a, b) =&gt; a.valor - b.valor);
+    <span class="tok-kw">case</span> <span class="tok-str">"nome"</span>:
+      <span class="tok-kw">return</span> copia.sort((a, b) =&gt; a.titulo.localeCompare(b.titulo, <span class="tok-str">"pt-BR"</span>));
+    <span class="tok-kw">default</span>:
+      <span class="tok-kw">return</span> copia;
+  }
+}</code></pre>
+      </div>
+      <div class="callout ouro">
+        <div class="callout-titulo">Por que a cópia com [...lista]</div>
+        <p>
+          Diferente de <code class="linha">filter</code> e <code class="linha">find</code>, <code class="linha">.sort()</code>
+          reordena o array <strong>original</strong>, no lugar (não cria um novo). Se ordenássemos <code class="linha">filmes</code>
+          diretamente, o catálogo inteiro ficaria embaralhado permanentemente na primeira ordenação, mesmo depois de voltar
+          pra "Todos". O spread <code class="linha">[...lista]</code> cria uma cópia rasa antes de ordenar, protegendo o
+          array original.
+        </p>
+        <p>
+          Outro detalhe: <code class="linha">.sort()</code> sem função de comparação ordena convertendo tudo pra
+          <strong>texto</strong> — <code class="linha">[1, 100000, 21, 30, 4]</code>, não numericamente. Por isso toda
+          chamada aqui passa uma função <code class="linha">(a, b) =&gt; a.valor - b.valor</code>: negativo significa
+          "a vem antes", positivo "a vem depois", zero "mantém a ordem". Pra nomes, <code class="linha">localeCompare</code>
+          entende acentuação do português (ordena "Á" perto de "A", como um dicionário faria).
+        </p>
+      </div>
+    </section>
+
+    <section class="capitulo" id="formularios">
+      <div class="numero-capitulo">04</div>
+      <h2>Formulários e captura de texto</h2>
+
+      <p>
+        Dois padrões se repetem sempre que o usuário digita ou escolhe algo: ler o valor no evento certo, e normalizar
+        texto antes de comparar.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js</div>
+        <pre><code>campoBusca.addEventListener(<span class="tok-str">"input"</span>, (evento) =&gt; {
+  termoBusca = evento.target.value; <span class="tok-com">// dispara a cada tecla digitada</span>
+  renderizarFilmes();
+});
+
+selectOrdenar.addEventListener(<span class="tok-str">"change"</span>, (evento) =&gt; {
+  criterioOrdenacao = evento.target.value; <span class="tok-com">// dispara só ao trocar de opção</span>
+  renderizarFilmes();
+});</code></pre>
+      </div>
+      <p>
+        <code class="linha">"input"</code> dispara a cada caractere digitado (bom pra busca em tempo real);
+        <code class="linha">"change"</code> só dispara quando o valor é confirmado — no caso de um
+        <code class="linha">&lt;select&gt;</code>, quando uma opção diferente é escolhida.
+      </p>
+
+      <h3>Normalizando texto pra busca</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">utilitarios.js</div>
+        <pre><code><span class="tok-kw">export function</span> <span class="tok-fn">normalizarTexto</span>(texto) {
+  <span class="tok-kw">return</span> texto
+    .toLowerCase()
+    .normalize(<span class="tok-str">"NFD"</span>)
+    .replace(<span class="tok-str">/[̀-ͯ]/g</span>, <span class="tok-str">""</span>);
+}</code></pre>
+      </div>
+      <p>
+        <code class="linha">.normalize("NFD")</code> decompõe caracteres acentuados em letra-base + marca de acento separada
+        (ex: "ç" vira "c" + uma marca de cedilha, como dois caracteres Unicode distintos). O regex
+        <code class="linha">/[̀-ͯ]/g</code> apaga qualquer caractere nessa faixa Unicode, que é exatamente onde
+        vivem as "marcas de acento combinantes" — sobra só a letra-base. É assim que digitar "acao" encontra "Ação".
+      </p>
+    </section>
+
+    <section class="capitulo" id="localstorage">
+      <div class="numero-capitulo">05</div>
+      <h2>localStorage</h2>
+
+      <p>
+        Três coisas persistem entre visitas: o carrinho, os favoritos e a preferência de tema — todas guardadas no
+        <code class="linha">localStorage</code> do navegador.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">carrinho.js</div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">salvarCarrinho</span>() {
+  <span class="tok-kw">try</span> {
+    localStorage.setItem(CHAVE_CARRINHO, <span class="tok-fn">JSON</span>.stringify(carrinho));
+  } <span class="tok-kw">catch</span> (erro) {
+    console.warn(<span class="tok-str">"Não foi possível salvar o carrinho no localStorage."</span>, erro);
+  }
+}</code></pre>
+      </div>
+
+      <h3>Por que só aceita string</h3>
+      <p>
+        <code class="linha">localStorage</code> é, por baixo, um dicionário chave→valor onde tanto a chave quanto o valor
+        são <strong>sempre texto</strong> — não existe "tipo array" ou "tipo objeto" salvo ali. Isso é proposital: o
+        formato foi desenhado pra ser trivial de persistir em disco de forma consistente em qualquer navegador. Salvar
+        um array direto (sem <code class="linha">JSON.stringify</code>) não dá erro — o JS silenciosamente chama
+        <code class="linha">.toString()</code> nele, e o valor salvo vira algo como
+        <code class="linha">"[object Object],[object Object]"</code>, perdendo os dados de verdade.
+      </p>
+
+      <div class="callout">
+        <div class="callout-titulo">Origem e escopo</div>
+        <p>
+          <code class="linha">localStorage</code> é isolado por <em>origem</em> — protocolo, domínio e porta juntos.
+          <code class="linha">http://site.com</code> e <code class="linha">https://site.com</code> têm storages
+          completamente separados, mesmo sendo "o mesmo site" pro usuário. É também por isso que os dados nunca saem
+          do navegador de quem está usando: não sincronizam entre dispositivos nem ficam visíveis pra outra pessoa —
+          só um backend real resolveria isso.
+        </p>
+      </div>
+
+      <div class="callout ouro">
+        <div class="callout-titulo">Por que o try/catch é necessário, não decorativo</div>
+        <p>
+          A API pode lançar <code class="linha">SecurityError</code> em cenários reais: armazenamento bloqueado por
+          política do navegador, cota excedida, ou certas configurações de aba anônima. Sem o <code class="linha">try/catch</code>,
+          um erro aí quebraria a execução de toda a função que chamou <code class="linha">salvarCarrinho()</code> — com ele,
+          o site continua funcionando normalmente, só sem persistir daquela vez.
+        </p>
+      </div>
+
+      <h3>Set ↔ Array, na ida e na volta</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">favoritos.js</div>
+        <pre><code><span class="tok-kw">let</span> favoritos = <span class="tok-kw">new</span> <span class="tok-fn">Set</span>();
+
+<span class="tok-com">// salvar: Set não é serializável direto, vira array primeiro</span>
+localStorage.setItem(CHAVE_FAVORITOS, <span class="tok-fn">JSON</span>.stringify([...favoritos]));
+
+<span class="tok-com">// carregar: array volta a virar Set</span>
+favoritos = <span class="tok-kw">new</span> <span class="tok-fn">Set</span>(<span class="tok-fn">JSON</span>.parse(salvo));</code></pre>
+      </div>
+      <p>
+        Favoritos usa <code class="linha">Set</code> (conjunto) em vez de array, porque um filme só pode estar
+        "favoritado" ou não — não faz sentido duplicar. <code class="linha">Set</code> tem <code class="linha">.has()</code>,
+        <code class="linha">.add()</code> e <code class="linha">.delete()</code> prontos pra essa checagem de pertencimento.
+        Mas <code class="linha">JSON.stringify</code> não sabe serializar um <code class="linha">Set</code> diretamente —
+        por isso o espalhamento <code class="linha">[...favoritos]</code> converte pra array antes de salvar, e
+        <code class="linha">new Set(array)</code> reconstrói o conjunto ao carregar.
+      </p>
+    </section>
+
+    <section class="capitulo" id="async">
+      <div class="numero-capitulo">06</div>
+      <h2>Promises e async/await</h2>
+
+      <p>
+        Simulamos uma chamada de API — o formato exato que o backend real vai assumir depois — pra já deixar o app
+        preparado pra trocar dados fixos por dados de rede sem reescrever a lógica de exibição.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">movies.js</div>
+        <pre><code><span class="tok-kw">export function</span> <span class="tok-fn">buscarFilmes</span>() {
+  <span class="tok-kw">return new</span> <span class="tok-fn">Promise</span>((resolve) =&gt; {
+    setTimeout(() =&gt; {
+      resolve(FILMES);
+    }, <span class="tok-str">600</span>);
+  });
+}</code></pre>
+      </div>
+
+      <h3>Os três estados de uma Promise</h3>
+      <ul>
+        <li><strong>pending</strong> (pendente) — ainda não terminou</li>
+        <li><strong>fulfilled</strong> (cumprida) — terminou com sucesso, carrega um valor</li>
+        <li><strong>rejected</strong> (rejeitada) — terminou com erro</li>
+      </ul>
+      <p>
+        <code class="linha">new Promise((resolve, reject) =&gt; ...)</code> roda essa função imediatamente, de forma
+        síncrona. Chamar <code class="linha">resolve(valor)</code> transiciona pra <em>fulfilled</em>; chamar
+        <code class="linha">reject(erro)</code> transicionaria pra <em>rejected</em> (não usamos isso ainda, porque a API
+        é simulada e nunca falha — mas é o mesmo lugar onde um <code class="linha">fetch</code> real trataria "servidor
+        fora do ar"). Uma vez decidido, o estado nunca muda de novo.
+      </p>
+
+      <h3>await, dentro de uma função async</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js — iniciarCatalogo</div>
+        <pre><code><span class="tok-kw">export async function</span> <span class="tok-fn">iniciarCatalogo</span>() {
+  carregarFavoritos();
+  mostrarCarregando();
+  filmes = <span class="tok-kw">await</span> buscarFilmes();
+  selecionarCategoria(<span class="tok-str">"Todos"</span>);
+}</code></pre>
+      </div>
+      <p>
+        <code class="linha">await</code> só existe dentro de uma função marcada <code class="linha">async</code>. Ele pausa
+        <strong>aquela função específica</strong> até a Promise resolver, e entrega o valor resolvido direto — sem
+        precisar de um callback <code class="linha">.then()</code>. Por causa disso, <code class="linha">iniciarCatalogo</code>
+        lê como código sequencial normal, de cima a baixo, mesmo tendo uma pausa assíncrona no meio.
+      </p>
+
+      <div class="callout ouro">
+        <div class="callout-titulo">"Pausar" não trava o navegador</div>
+        <p>
+          Enquanto <code class="linha">iniciarCatalogo</code> está parada no <code class="linha">await</code>, o
+          <em>event loop</em> do navegador continua livre pra atender outras coisas — cliques, hover, outros scripts.
+          A prova prática: enquanto a mensagem "Carregando catálogo..." está na tela, o botão de tema (🌙) continua
+          respondendo normalmente. Se <code class="linha">await</code> travasse a thread principal, esse clique ficaria
+          congelado até os 600ms passarem.
+        </p>
+      </div>
+
+      <h3>Toda função async devolve uma Promise</h3>
+      <p>
+        Mesmo sem um <code class="linha">return new Promise(...)</code> explícito, qualquer função marcada
+        <code class="linha">async</code> sempre devolve uma Promise — se ela tivesse <code class="linha">return "pronto"</code>,
+        quem chamasse a função receberia uma Promise que resolve pra <code class="linha">"pronto"</code>, não a string direto.
+      </p>
+
+      <h3>Como isso viraria uma chamada real</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">o que buscarFilmes() vira quando o backend existir</div>
+        <pre><code><span class="tok-kw">export async function</span> <span class="tok-fn">buscarFilmes</span>() {
+  <span class="tok-kw">try</span> {
+    <span class="tok-kw">const</span> resposta = <span class="tok-kw">await</span> fetch(<span class="tok-str">"http://localhost:8000/filmes/"</span>);
+    <span class="tok-kw">return await</span> resposta.json();
+  } <span class="tok-kw">catch</span> (erro) {
+    <span class="tok-kw">throw new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"Não foi possível carregar o catálogo."</span>);
+  }
+}</code></pre>
+      </div>
+      <p>
+        <code class="linha">fetch()</code> devolve uma Promise — a "demora" deixa de ser um <code class="linha">setTimeout</code>
+        fake e passa a ser o tempo real de ida e volta pela rede. <code class="linha">resposta.json()</code> também é
+        assíncrono (ler e decodificar o corpo da resposta leva tempo), por isso o segundo <code class="linha">await</code>.
+        Nada no resto do <code class="linha">catalogo.js</code> precisaria mudar — ele já está preparado pra "esperar".
+      </p>
+    </section>
+
+    <section class="capitulo" id="modulos">
+      <div class="numero-capitulo">07</div>
+      <h2>Módulos ES (import/export)</h2>
+
+      <p>
+        Quando o projeto cresceu (catálogo, modal, carrinho, favoritos, tema, tudo num <code class="linha">app.js</code> só),
+        dividimos em arquivos menores usando o sistema de módulos nativo do JavaScript.
+      </p>
+
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">favoritos.js exporta →</div>
+        <pre><code><span class="tok-kw">export function</span> <span class="tok-fn">ehFavorito</span>(idFilme) {
+  <span class="tok-kw">return</span> favoritos.has(idFilme);
+}
+
+<span class="tok-kw">export function</span> <span class="tok-fn">alternarFavorito</span>(idFilme, aoMudar) { <span class="tok-com">/* ... */</span> }</code></pre>
+      </div>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js importa ←</div>
+        <pre><code><span class="tok-kw">import</span> { carregarFavoritos, ehFavorito, alternarFavorito } <span class="tok-kw">from</span> <span class="tok-str">"./favoritos.js"</span>;</code></pre>
+      </div>
+
+      <h3>O que muda em relação a scripts normais</h3>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Script clássico</th><th>Módulo (type="module")</th></tr></thead>
+          <tbody>
+            <tr><td>Tudo cai no escopo global — variáveis de um arquivo "vazam" pros outros</td><td>Cada arquivo tem seu próprio escopo isolado; só o que é exportado fica visível fora</td></tr>
+            <tr><td>Ordem dos <code class="mono">&lt;script&gt;</code> no HTML decide o que existe primeiro</td><td>O <code class="mono">import</code> declara explicitamente a dependência — o navegador resolve a ordem sozinho</td></tr>
+            <tr><td>Modo "solto" por padrão (permite erros que módulos não permitem)</td><td>Sempre em modo estrito automaticamente</td></tr>
+            <tr><td>Funciona abrindo o arquivo direto (<code class="mono">file://</code>)</td><td>Exige servidor HTTP — bloqueado em <code class="mono">file://</code> por segurança (CORS)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout ouro">
+        <div class="callout-titulo">Por isso o servidor local</div>
+        <p>
+          Foi essa última linha da tabela que nos obrigou a rodar <code class="linha">python -m http.server</code> e abrir
+          o site por <code class="linha">http://localhost:5500/...</code> em vez de dar duplo clique no
+          <code class="linha">index.html</code>. O navegador recusa buscar módulos de origem <code class="linha">file://</code>
+          por política de segurança — mesma família de proteção do CORS que vimos no backend de gastos.
+        </p>
+      </div>
+
+      <h3>Evitando importação circular</h3>
+      <p>
+        <code class="linha">favoritos.js</code> não importa nada de <code class="linha">catalogo.js</code> — mesmo
+        precisando disparar um re-render depois de favoritar algo. Em vez disso, <code class="linha">alternarFavorito</code>
+        recebe uma função de callback (<code class="linha">aoMudar</code>) como argumento:
+      </p>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">catalogo.js chamando favoritos.js</div>
+        <pre><code>alternarFavorito(filme.id, renderizarFilmes); <span class="tok-com">// passa a função, não importa o módulo de volta</span></code></pre>
+      </div>
+      <p>
+        Isso mantém a dependência numa única direção (<code class="linha">catalogo → favoritos</code>, nunca o contrário).
+        Duas dependências que se importam mutuamente ao mesmo tempo é um dos poucos jeitos reais de quebrar módulos ES —
+        o grafo de dependências precisa ser resolvido antes de qualquer código rodar, e um ciclo síncrono impede isso.
+      </p>
+
+      <h3>app.js — de tudo pra quase nada</h3>
+      <div class="bloco-codigo">
+        <div class="bloco-codigo-legenda">app.js, o arquivo inteiro</div>
+        <pre><code><span class="tok-kw">import</span> { iniciarCatalogo } <span class="tok-kw">from</span> <span class="tok-str">"./catalogo.js"</span>;
+<span class="tok-kw">import</span> { iniciarCarrinho, fecharCarrinho } <span class="tok-kw">from</span> <span class="tok-str">"./carrinho.js"</span>;
+<span class="tok-kw">import</span> { iniciarTema } <span class="tok-kw">from</span> <span class="tok-str">"./tema.js"</span>;
+<span class="tok-kw">import</span> { fecharModal } <span class="tok-kw">from</span> <span class="tok-str">"./modal.js"</span>;
+
+document.addEventListener(<span class="tok-str">"keydown"</span>, (evento) =&gt; {
+  <span class="tok-kw">if</span> (evento.key === <span class="tok-str">"Escape"</span>) {
+    fecharModal();
+    fecharCarrinho();
+  }
+});
+
+iniciarCarrinho();
+iniciarTema();
+iniciarCatalogo();</code></pre>
+      </div>
+      <p>
+        O arquivo que antes concentrava tudo virou só o "montador": importa cada pedaço já pronto e liga as três
+        inicializações. É a diferença entre <em>saber como cada parte funciona</em> e <em>saber como as partes se encaixam</em> —
+        e esse arquivo só precisa da segunda coisa.
+      </p>
+    </section>
+
+    <section class="capitulo" id="padrao">
+      <div class="numero-capitulo">08</div>
+      <h2>O padrão geral por trás de tudo</h2>
+
+      <p>
+        Sem perceber, o mesmo ciclo de três passos se repete em toda funcionalidade do projeto — categoria, busca,
+        favoritos, ordenação, carrinho:
+      </p>
+
+      <ol class="lista">
+        <li><strong>Estado vive em variáveis</strong> (<code class="linha">categoriaAtual</code>, <code class="linha">termoBusca</code>, <code class="linha">carrinho</code>, <code class="linha">favoritos</code>)</li>
+        <li><strong>Uma ação do usuário muda o estado</strong> (clique, digitação, seleção)</li>
+        <li><strong>Uma função de "renderizar" lê o estado atual e redesenha aquele pedaço da tela do zero</strong> — sempre limpando (<code class="linha">innerHTML = ""</code>) antes de recriar, nunca tentando atualizar só o que mudou</li>
+      </ol>
+
+      <p>
+        Isso é, em miniatura e escrito à mão, a mesma ideia central que frameworks como React resolvem de forma
+        automática — a diferença é que lá existe um mecanismo (o "virtual DOM") que decide sozinho o que precisa
+        mudar de verdade na tela; aqui, cada re-render recria tudo, o que é mais simples de entender mas mais caro
+        computacionalmente. Pra um catálogo de 16 filmes, essa diferença de custo é irrelevante — só passaria a
+        importar em listas muito grandes ou atualizações muito frequentes.
+      </p>
+    </section>
+
+    <section class="capitulo" id="cola">
+      <div class="numero-capitulo">＋</div>
+      <h2>Cola rápida</h2>
+      <p>Referência dos métodos e APIs usados no projeto, pra consulta rápida sem reler as explicações inteiras.</p>
+
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>API</th><th>Faz o quê</th><th>Onde aparece</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">document.getElementById</td><td>Busca 1 elemento existente pelo id</td><td>todo módulo</td></tr>
+            <tr><td class="mono">document.createElement</td><td>Cria elemento novo, ainda fora da página</td><td>catalogo.js, carrinho.js</td></tr>
+            <tr><td class="mono">.addEventListener</td><td>Liga uma função a um evento</td><td>todo módulo</td></tr>
+            <tr><td class="mono">evento.stopPropagation</td><td>Impede o clique de borbulhar pro elemento pai</td><td>botão de favorito</td></tr>
+            <tr><td class="mono">Array.filter</td><td>Devolve array novo, só com quem passa no teste</td><td>catalogo.js, carrinho.js</td></tr>
+            <tr><td class="mono">Array.find</td><td>Devolve o 1º item que bate (ou undefined)</td><td>modal.js</td></tr>
+            <tr><td class="mono">Array.sort</td><td>Reordena o array original (muta!) com comparador</td><td>catalogo.js</td></tr>
+            <tr><td class="mono">String.localeCompare</td><td>Compara texto respeitando acentuação do idioma</td><td>ordenarFilmes</td></tr>
+            <tr><td class="mono">JSON.stringify / .parse</td><td>Objeto ⇄ texto, pra guardar em localStorage</td><td>carrinho.js, favoritos.js, tema.js</td></tr>
+            <tr><td class="mono">new Promise / resolve</td><td>Cria uma promessa de valor futuro</td><td>movies.js</td></tr>
+            <tr><td class="mono">async / await</td><td>Espera uma Promise sem travar a página</td><td>catalogo.js</td></tr>
+            <tr><td class="mono">import / export</td><td>Compartilha código entre arquivos com escopo isolado</td><td>todos os módulos</td></tr>
+            <tr><td class="mono">new Set</td><td>Conjunto de valores únicos, sem duplicar</td><td>favoritos.js</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Resumo produzido a partir do código real de <span class="mono">frontend/src/*.js</span> do MOVIEHUSTLER, com conceitos
+  conferidos na documentação da MDN Web Docs. Serve como material de revisão — volte aqui sempre que precisar
+  relembrar o porquê de alguma decisão do código.
+</footer>
