@@ -86,7 +86,7 @@
 
 body {
   margin: 0;
-  font-family: "Work Sans", "Segoe UI", Arial, sans-serif;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif;
   background: var(--cor-fundo);
   color: var(--cor-texto);
   transition: background 0.2s ease, color 0.2s ease;
@@ -172,10 +172,9 @@ body {
   height: 42px;
   border-radius: 999px;
   padding: 0 1.1rem;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.2px;
   cursor: pointer;
   box-shadow: 0 2px 8px var(--cor-sombra);
   transition: filter 0.15s, transform 0.1s;
@@ -211,10 +210,9 @@ body {
   border: 2px solid var(--cor-borda);
   border-radius: 999px;
   padding: 0.25rem 1rem 0.25rem 0.25rem;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.2px;
   color: var(--cor-texto);
   cursor: pointer;
   box-shadow: 0 2px 8px var(--cor-sombra);
@@ -256,10 +254,8 @@ body {
   text-align: left;
   padding: 0.65rem 0.75rem;
   border-radius: 8px;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-size: 1.1rem;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--cor-texto);
   cursor: pointer;
   transition: background 0.12s;
@@ -360,10 +356,8 @@ body {
   border: none;
   border-radius: 999px;
   padding: 0.55rem 0;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.8rem;
   color: var(--cor-texto-suave);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
@@ -482,10 +476,9 @@ body {
   border: none;
   border-radius: 9px;
   padding: 0.75rem 1rem;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.15rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.2px;
   cursor: pointer;
   transition: filter 0.15s;
 }
@@ -706,10 +699,8 @@ body {
   border: none;
   border-radius: 6px;
   padding: 0.6rem 1rem;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 
@@ -781,10 +772,8 @@ body {
   background: var(--cor-superficie);
   border: 2px solid var(--cor-acento);
   color: var(--cor-acento);
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.85rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   cursor: pointer;
@@ -1131,10 +1120,9 @@ body {
   border: none;
   border-radius: 6px;
   padding: 0.7rem 1rem;
-  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
-  font-weight: 400;
-  font-size: 1.15rem;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.2px;
   cursor: pointer;
   transition: filter 0.15s;
 }
