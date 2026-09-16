@@ -2,7 +2,7 @@
 
 Locadora de filmes virtual, estilo Blockbuster anos 2000. Projeto de estudo full-stack — este README é atualizado conforme cada parte nova é estudada/construída, organizado por categoria.
 
-**Status geral:** stack completa funcionando — backend com CRUD, autenticação JWT e PostgreSQL; frontend com login/cadastro conectados e aluguel protegido por conta
+**Status geral:** stack completa funcionando — backend com CRUD, autenticação JWT e PostgreSQL; frontend com login/cadastro conectados, aluguel protegido por conta e favoritos sincronizados com a API (persistem entre dispositivos, com merge automático do que foi favoritado como visitante)
 
 **Índice:** [Frontend](#--frontend-javascript-html-css) · [Backend](#--backend-python) ([bug do ForeignKey](#bug-real-que-encontramos-e-corrigimos-foreignkey-sem-integridade-aplicada) · [hash/sal/JWT](#aprofundando-hash-de-senha-sal-e-jwt)) · [Banco de dados](#--banco-de-dados) · [Visão geral do produto](#visão-geral-do-produto-o-que-o-moviehustler-é)
 
@@ -51,7 +51,7 @@ frontend/
     ├── catalogo.js                 # grade de filmes, filtros, busca, ordenação
     ├── modal.js                      # popup de detalhes do filme + fluxo de aluguel
     ├── carrinho.js                     # estado e painel do carrinho
-    ├── favoritos.js                      # estado dos favoritos (♥)
+    ├── favoritos.js                      # estado dos favoritos (♥) — API quando logado, localStorage quando visitante
     ├── movies.js                           # dados do catálogo (filmes, agências, aluguel)
     ├── utilitarios.js                        # funções auxiliares (formatação, busca)
     └── style.css                               # visual (paleta azul/amarelo)
@@ -66,18 +66,20 @@ frontend/
 - **Menu do perfil**: depois de logado, o botão vira um avatar + primeiro nome, que abre um menu com 5 opções — **Perfil** (nome/email da conta), **Pedidos** (histórico real de aluguéis, vindo de `GET /alugueis/`), **Favoritos** (painel próprio com os filmes favoritados), **Configurações** (tema claro/escuro/sistema) e **Sair**
 - Aluguel real, protegido por login: escolher agência e clicar "Alugar agora" chama `POST /alugueis/` com o token no header `Authorization`. Se a pessoa não estiver logada, o clique abre o modal de login em vez de tentar a chamada (o botão já avisa antes, mostrando "Entrar para alugar")
 - Favoritos (♥ no card): "Favoritos" no menu do perfil abre um **painel separado** (igual "Pedidos") com só os filmes favoritados — o catálogo por trás não é alterado, evitando o bug de uma versão anterior onde favoritar sobrescrevia o filtro/categoria que a pessoa estava vendo
+- **Favoritos ligados à conta**: logado, favoritar chama `POST /favoritos/` / `DELETE /favoritos/{filme_id}` (nova tabela `favoritos`, única por par usuário+filme) em vez de só gravar no `localStorage` — os favoritos passam a acompanhar a conta entre navegadores/dispositivos diferentes. Deslogado, continua funcionando via `localStorage` (visitante); ao fazer login ou criar conta, os favoritos guardados como visitante são **mesclados** com os da conta (`sincronizarFavoritosAposLogin` em `favoritos.js`) em vez de descartados
 - **Logo clicável**: clicar em "MOVIEHUSTLER" no cabeçalho fecha qualquer modal/painel aberto e volta pro estado inicial do catálogo (categoria "Todos", busca e ordenação limpas, rolagem pro topo)
 - **Modo claro/escuro com 3 opções** (Claro / Escuro / Padrão do sistema), escolhido em Configurações → Aparência, salvo no `localStorage`. O modo escuro foi redesenhado pra ser **preto de verdade, sem amarelo** — a cor da marca "amarelo-blockbuster" vira azul só no tema escuro (ver "Aprofundando" abaixo), então todo botão/selo que era amarelo no claro (Criar conta, Alugar agora, faixa etária, etc.) fica azul no escuro
 - Botão do carrinho **fixo no canto inferior direito da tela** (sempre visível, mesmo rolando a página) — separado da área de conta, que fica no topo
-- **Tipografia própria**: fonte **"Machine Medium" (ITC Machine)** no logo do cabeçalho — a mesma fonte usada pela Blockbuster de verdade na marca original; **"Bebas Neue"** (Google Fonts) nos títulos de seção/modal/painel, nos botões, nos itens do menu de perfil e nos títulos dos cards de filme — condensada, estilo cartaz de locadora, dando identidade única ao site em vez de tudo cair na fonte padrão do sistema; **"Work Sans"** (Google Fonts) só no texto corrido (parágrafos, descrições), onde a legibilidade importa mais que o estilo
-- Persistência local via `localStorage` (carrinho, favoritos, sessão de login, preferência de tema)
+- **Hierarquia tipográfica com 3 níveis** (ver "Aprofundando" abaixo pro porquê): **"Machine Medium"** (ITC Machine — a fonte real da marca Blockbuster) só no logo, uso único; **"Bebas Neue"** (Google Fonts) reservada só pra títulos de verdade — seções, nome do filme no popup, título dos painéis, título dos cards de filme; **"Manrope"** (Google Fonts) em tudo o resto — texto corrido E também botões/abas/itens de menu, variando peso (negrito nos controles, regular no texto) em vez de trocar de fonte pra cada elemento
+- Persistência local via `localStorage` (carrinho, sessão de login, preferência de tema, e favoritos só enquanto deslogado)
 
-> **Nota sobre fontes auto-hospedadas e licença**: `frontend/src/fonts/` guarda dois arquivos servidos via `@font-face` (diferente do Bebas Neue/Work Sans, que vêm de um link do Google Fonts). **`ITC Machine LT Medium.ttf`** é a fonte oficial usada no logo — é uma fonte **comercial** da ITC/Monotype; o arquivo foi fornecido pelo próprio usuário do projeto, que já possuía uma licença legítima, e **não está versionado no Git** (`.gitignore`) por não ser nosso pra redistribuir. **`Blockbuster.ttf`** (baixado do DaFont, autor Fenotype, "100% Free" segundo o próprio site) fica como *fallback* caso a fonte comercial não esteja disponível — essa sim seguiu no repositório, mas sem garantia de licença pra uso comercial, só pra estudo local.
+> **Nota sobre fontes auto-hospedadas e licença**: `frontend/src/fonts/` guarda dois arquivos servidos via `@font-face` (diferente do Bebas Neue/Manrope, que vêm de um link do Google Fonts). **`ITC Machine LT Medium.ttf`** é a fonte oficial usada no logo — é uma fonte **comercial** da ITC/Monotype; o arquivo foi fornecido pelo próprio usuário do projeto, que já possuía uma licença legítima, e **não está versionado no Git** (`.gitignore`) por não ser nosso pra redistribuir. **`Blockbuster.ttf`** (baixado do DaFont, autor Fenotype, "100% Free" segundo o próprio site) fica como *fallback* caso a fonte comercial não esteja disponível — essa sim seguiu no repositório, mas sem garantia de licença pra uso comercial, só pra estudo local.
 - Catálogo e agências vindos de verdade da API (`fetch` em `movies.js`), com tratamento de erro caso o backend esteja fora do ar
+
+> **Aprofundando: por que "hierarquia tipográfica" não é "trocar a fonte de tudo"**. Na primeira versão, apliquei Bebas Neue em praticamente todo texto clicável (botões, abas, itens de menu, categorias) além dos títulos — o resultado visual foi "tudo com a mesma fonte", mesmo tecnicamente usando 3 famílias diferentes no projeto. Pesquisei o princípio de hierarquia tipográfica (fontes: [Toptal — Typographic Hierarchy](https://www.toptal.com/designers/typography/typographic-hierarchy) e um levantamento geral sobre tipografia web) e a regra central é: **use poucas famílias de fonte (2–3 no máximo) e construa a hierarquia com tamanho, peso e espaçamento, não trocando a fonte a cada elemento**. Um heading precisa ser "significativamente mais proeminente" que um botão — não simplesmente *diferente*. A correção: Bebas Neue voltou a ser exclusiva de título de verdade (uso raro, alto contraste), e botões/abas/menu voltaram pro Manrope, mas em `font-weight: 700` (negrito) em vez do `400` regular do texto corrido — a mesma família, mas com peso diferente sinalizando "isto é interativo", distinto de "isto é um parágrafo".
 
 ### O que ainda falta
 
-- Ligar `favoritos` a uma conta também (hoje só o aluguel exige login; favoritos continua em `localStorage`, sem passar pela API)
 - Renovar/expirar sessão de forma amigável: hoje, se o token expirar (1 dia), a próxima tentativa de alugar simplesmente falha — falta detectar isso e reabrir o login automaticamente
 - Imagens reais de filme (capas são placeholders coloridos com o título)
 - Telas/formulário pra usar o CRUD completo do backend (cadastrar, editar, remover filme pela interface — hoje só existe via API)
@@ -103,6 +105,10 @@ Lista rápida: DOM (seleção/criação de elementos, template literals), evento
 - **Medidor de força de senha com regex simples**: `avaliarForcaSenha()` soma 1 ponto pra cada critério que a senha atende (`senha.length >= 6`, `length >= 10`, tem maiúscula *e* minúscula, tem número, tem símbolo) usando testes de regex (`/[A-Z]/.test(senha)`, etc.) — sem nenhuma biblioteca externa. A pontuação (0 a 5) vira um índice num array de 5 "níveis" (rótulo + classe CSS). A cor de cada nível fica numa variável CSS local por classe (`.nivel-1 { --cor-nivel: ... }`), reaproveitada tanto pelo preenchimento da barra (`background`) quanto pelo texto (`color`) — evita repetir a mesma cor em dois lugares do CSS.
 
 - **Reaproveitar um componente sem acoplar comportamento (correção de bug)**: a primeira versão de "Favoritos" reaproveitava o filtro do catálogo principal (marcar `somenteFavoritos = true` e re-renderizar a mesma grade) — o problema é que isso **mudava o estado que a pessoa já estava vendo** (categoria, busca), então voltar do "modo favoritos" perdia o lugar onde ela estava. A correção foi separar de vez: `criarCardFilme(filme, aoMudarFavorito)` passou a receber a função de re-renderização como parâmetro, em vez de sempre chamar a `renderizarFilmes()` do catálogo principal. Agora o painel de Favoritos (em `perfil.js`) passa sua **própria** função de re-render (`renderizarFavoritos`), e o catálogo por trás nunca é tocado — o mesmo componente (`criarCardFilme`) serve dois contextos diferentes sem que um saiba da existência do outro.
+
+- **Atualização otimista (*optimistic UI*), com desfazer em caso de falha**: quando `alternarFavorito()` é chamado logado, o coração do card muda de cor **antes** da resposta da API chegar — o `Set` local de favoritos é alterado e a tela re-renderiza de imediato, e só depois disso o `fetch` pro `POST`/`DELETE /favoritos/` é disparado em segundo plano. Pesquisando o padrão (ele tem nome — *optimistic UI update*), a regra central que aparece em toda fonte séria sobre o assunto é: **atualização otimista sem um caminho de reversão (*rollback*) não é uma otimização, é um bug** — a interface tem que voltar pro estado real sempre que a chamada falhar, não pode ficar "mentindo" pro usuário. É exatamente o que o `catch` de `alternarFavorito()` faz: se o `fetch` falhar (rede caiu, token expirou), o código desfaz manualmente a mudança que já tinha feito no `Set` (adiciona de volta se tinha removido, remove se tinha adicionado) e re-renderiza de novo — sem isso, um favorito que falhou ao salvar ficaria mostrando "favoritado" na tela pra sempre, mesmo sem existir de verdade na conta. É o mesmo motivo de não usarmos esse padrão pra ações mais arriscadas (como finalizar um aluguel) — otimismo só compensa quando o custo de errar é baixo e reversível na hora.
+
+  *Fontes consultadas: [freeCodeCamp — How to Use the Optimistic UI Pattern](https://www.freecodecamp.org/news/how-to-use-the-optimistic-ui-pattern-with-the-useoptimistic-hook-in-react/) e [DEV Community — Oops, Our Optimistic Update Has an Error?](https://dev.to/javapixastudio/oops-our-optimistic-update-has-an-error-heres-how-to-fix-it-pbo) — os exemplos são em React (`useOptimistic`), mas o princípio (estado local muda antes da confirmação do servidor, com rollback garantido no erro) é o mesmo aplicado aqui à mão, sem framework.*
 
 #### Bug real: o atributo `hidden` sendo ignorado por causa do `display: flex`
 
@@ -165,16 +171,19 @@ backend/
 │   │   ├── filme.py           # tabela `filmes` (SQLAlchemy)
 │   │   ├── agencia.py          # tabela `agencias`
 │   │   ├── aluguel.py           # tabela `alugueis` (liga filme + agência + usuario por ForeignKey)
+│   │   ├── favorito.py           # tabela `favoritos` (liga usuario + filme, único por par)
 │   │   └── usuario.py            # tabela `usuarios` (nome, email, senha_hash)
 │   ├── schemas/
 │   │   ├── filme.py           # formato de entrada/saída de /filmes
 │   │   ├── agencia.py          # formato de entrada/saída de /agencias
 │   │   ├── aluguel.py           # formato de entrada/saída de /alugueis
+│   │   ├── favorito.py          # formato de entrada/saída de /favoritos
 │   │   └── usuario.py            # UsuarioCreate, UsuarioOut, Token
 │   └── routes/
 │       ├── filmes.py          # endpoints de /filmes
 │       ├── agencias.py         # endpoints de /agencias
 │       ├── alugueis.py          # endpoints de /alugueis
+│       ├── favoritos.py         # endpoints de /favoritos
 │       └── auth.py               # /auth/registrar, /auth/login, /auth/me
 ├── seed.py                 # popula o banco com filmes/agências que já existiam no frontend
 └── requirements.txt
@@ -196,6 +205,12 @@ backend/
 - `POST /alugueis/` — **requer login** — registra um aluguel pro usuário logado (recebe `filme_id` + `agencia_id`; 404 se algum dos dois não existir)
 - `DELETE /alugueis/{id}` — **requer login** — cancela um aluguel, só se ele pertencer ao usuário logado (404 — não 403 — se pertencer a outra pessoa, pra não revelar que o aluguel existe)
 
+**Favoritos**
+- `GET /favoritos/` — **requer login** — lista os favoritos do usuário logado, cada um já com o filme completo
+- `POST /favoritos/` — **requer login** — adiciona um favorito (`filme_id`); se já existir, devolve o mesmo registro em vez de duplicar (idempotente — importante porque o frontend chama isso de novo ao mesclar favoritos de visitante com a conta)
+- `DELETE /favoritos/{filme_id}` — **requer login** — remove um favorito (404 se não existir pra esse usuário)
+- Modelo `Favorito` com `UniqueConstraint(usuario_id, filme_id)` — o banco garante que não existam dois registros do mesmo filme favoritado duas vezes pro mesmo usuário
+
 **Autenticação**
 - `POST /auth/registrar` — cria uma conta (nome, email, senha); 409 se o e-mail já estiver em uso; a senha nunca volta na resposta, só o hash fica salvo no banco
 - `POST /auth/login` — recebe email/senha (como formulário, não JSON — é o padrão OAuth2 que o Swagger entende nativamente) e devolve um token JWT; 401 se e-mail ou senha estiverem errados
@@ -208,8 +223,6 @@ backend/
 
 ### O que ainda falta
 
-- **Conectar a autenticação ao frontend** — isso agora é urgente, não só desejável: como `/alugueis/` passou a exigir login, o botão "Alugar agora" do site **está quebrado** até existir uma tela de login que guarde o token e mande ele nas requisições
-- Ligar `favoritos` a um usuário específico também (hoje só `alugueis` foi migrado; favoritos continua em `localStorage` no frontend)
 - Interface no frontend pra usar `POST`/`PUT`/`DELETE` de filmes (hoje só testados via Swagger/curl)
 - *(melhoria opcional, não urgente)* Trocar `bcrypt` por `Argon2id` no hash de senha — é a recomendação atual do OWASP; ver "Aprofundando" abaixo pro porquê
 
@@ -232,6 +245,8 @@ backend/
 - **`OAuth2PasswordBearer` e `OAuth2PasswordRequestForm`**: são as ferramentas do FastAPI pra implementar o fluxo padrão de autenticação por senha do OAuth2 — por isso `/auth/login` recebe os dados como formulário (`username`/`password`), não como JSON solto: é esse formato específico que faz o botão "Authorize" do Swagger funcionar automaticamente, sem configuração extra.
 - **Separar `security.py` de `dependencies.py`**: `security.py` só tem funções puras (hash, verificação, criar/decodificar token) que não sabem nada sobre banco de dados ou FastAPI — dá pra testar isoladamente. `dependencies.py` é a peça que *usa* essas funções junto com o banco pra formar `get_usuario_atual`, a dependência que qualquer rota futura vai poder declarar pra exigir login.
 - **Escopar dados por usuário (404 em vez de 403)**: depois de ligar `alugueis.usuario_id`, `listar_alugueis` filtra a query por `Aluguel.usuario_id == usuario_atual.id` — cada pessoa só vê o próprio histórico, nunca o de outra. Em `cancelar_aluguel`, o filtro combina `id` **e** `usuario_id` na mesma consulta: se o aluguel existe mas é de outra pessoa, a API devolve `404 Not Found` (não `403 Forbidden`) de propósito — `403` confirmaria pro atacante que aquele `id` existe e pertence a alguém, `404` não revela nada.
+- **`UniqueConstraint` composta em `__table_args__`**: o model `Favorito` declara `UniqueConstraint("usuario_id", "filme_id")` — diferente de um `unique=True` numa coluna só (que vale pra ela sozinha), isso restringe a **combinação** das duas colunas: qualquer usuário pode favoritar qualquer filme, e qualquer filme pode ser favoritado por várias pessoas, mas o *par* (`usuario_id`, `filme_id`) não pode se repetir. É o banco garantindo, estruturalmente, a mesma regra que `usuarios.email` já garantia sozinho (`unique=True`) — só que aqui a unicidade depende de duas colunas juntas, não de uma.
+- **Desenhando `POST /favoritos/` pra ser idempotente de propósito (a exceção que confirma a regra)**: a seção "Aprofundando" logo abaixo explica por que `POST` normalmente *não* é idempotente no projeto (`POST /filmes/` e `POST /alugueis/` criam um registro novo a cada chamada). `adicionar_favorito` quebra esse padrão de propósito: antes de inserir, ele consulta se aquele par `usuario_id`+`filme_id` já existe e, se existir, devolve o registro existente em vez de tentar criar outro (que geraria um erro de `UniqueConstraint` do banco). A razão é o próprio fluxo do frontend: `sincronizarFavoritosAposLogin()` reenvia *todos* os favoritos salvos como visitante pro `POST /favoritos/` depois do login, sem saber quais já existem na conta — chamar a mesma rota duas vezes com o mesmo filme precisa ser seguro, não gerar duplicata nem erro.
 
 #### Aprofundando: como as peças se encaixam
 
@@ -247,9 +262,9 @@ Vale registrar uma pegadinha pra quando o catálogo crescer: por padrão, esse c
 
 **Migrar de SQLite pra Postgres não exigiu tocar em nenhum model, schema ou rota.** Essa é a demonstração prática de pra que serve o SQLAlchemy como ORM (*Object-Relational Mapper*): todo o código que escrevemos (`db.query(Filme).all()`, `ForeignKey("filmes.id")`, `relationship()`) fala com um banco *abstrato*, não com SQLite ou Postgres especificamente. A única coisa que mudou de fato foi a `DATABASE_URL` (de `sqlite:///./filmes.db` pra `postgresql://...`) e o driver instalado (`psycopg2-binary`, que sabe conversar com Postgres — o SQLite nem precisa de driver externo, já vem embutido no Python). Uma consequência direta: o `PRAGMA foreign_keys=ON` que tínhamos adicionado em `database.py` pra corrigir o bug do filme órfão foi **removido** na migração — o Postgres aplica a integridade referencial por padrão, sem precisar de nenhuma configuração extra. Isso também confirma, na prática, algo que só tínhamos comentado: SQLite tem esse comportamento "relaxado" por padrão especificamente por compatibilidade histórica; a maioria dos bancos "de verdade" não tem essa pegadinha.
 
-**A escolha de verbo HTTP não é estética — cada um tem um contrato.** Dois conceitos guiam isso: métodos **seguros** (não mudam nada no servidor — só `GET` entre os nossos) e métodos **idempotentes** (chamar 1 vez ou 10 vezes seguidas tem o mesmo efeito final). `GET` é seguro e idempotente. `DELETE /filmes/{id}` é idempotente por design — deletar um filme que já foi deletado continua resultando em "esse filme não existe" (ainda que a segunda chamada dê 404 em vez de sucesso, o *estado final* do sistema é o mesmo). `PUT /filmes/{id}` também é idempotente: mandar o mesmo corpo duas vezes deixa o filme exatamente igual da segunda vez pra frente — é por isso que ele exige o recurso *inteiro*, não só o campo que mudou (isso é o que um `PATCH` faria diferente). Já `POST /filmes/` e `POST /alugueis/` **não são idempotentes de propósito**: cada chamada cria um registro novo, então repetir a mesma requisição duas vezes cria dois filmes/aluguéis diferentes. Entender essa diferença é o que evita, por exemplo, um botão "Alugar" mal feito no frontend disparando dois cliques e criando dois aluguéis iguais sem querer — algo a se ter em mente quando formos refinar essa parte da UI.
+**A escolha de verbo HTTP não é estética — cada um tem um contrato.** Dois conceitos guiam isso: métodos **seguros** (não mudam nada no servidor — só `GET` entre os nossos) e métodos **idempotentes** (chamar 1 vez ou 10 vezes seguidas tem o mesmo efeito final). `GET` é seguro e idempotente. `DELETE /filmes/{id}` é idempotente por design — deletar um filme que já foi deletado continua resultando em "esse filme não existe" (ainda que a segunda chamada dê 404 em vez de sucesso, o *estado final* do sistema é o mesmo). `PUT /filmes/{id}` também é idempotente: mandar o mesmo corpo duas vezes deixa o filme exatamente igual da segunda vez pra frente — é por isso que ele exige o recurso *inteiro*, não só o campo que mudou (isso é o que um `PATCH` faria diferente). Já `POST /filmes/` e `POST /alugueis/` **não são idempotentes de propósito**: cada chamada cria um registro novo, então repetir a mesma requisição duas vezes cria dois filmes/aluguéis diferentes. Entender essa diferença é o que evita, por exemplo, um botão "Alugar" mal feito no frontend disparando dois cliques e criando dois aluguéis iguais sem querer — algo a se ter em mente quando formos refinar essa parte da UI. `POST /favoritos/` é a exceção deliberada dessa regra no projeto: nada no protocolo HTTP *exige* que um `POST` seja idempotente (só `PUT`, `DELETE` e os seguros precisam ser), então nada impede que a rota seja desenhada pra se comportar como se fosse — foi exatamente essa liberdade que usamos pra fazer o merge de favoritos pós-login funcionar sem se preocupar em checar duplicata do lado do frontend.
 
-*Fontes consultadas: [documentação oficial do FastAPI sobre dependências](https://fastapi.tiangolo.com/tutorial/dependencies/), [documentação do SQLAlchemy sobre relationships](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html), [documentação do Pydantic sobre validação de models](https://docs.pydantic.dev/latest/concepts/models/), e [restfulapi.net sobre semântica dos métodos HTTP](https://restfulapi.net/http-methods/).*
+*Fontes consultadas: [documentação oficial do FastAPI sobre dependências](https://fastapi.tiangolo.com/tutorial/dependencies/), [documentação do SQLAlchemy sobre relationships](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html), [documentação do SQLAlchemy sobre constraints (`UniqueConstraint`)](https://docs.sqlalchemy.org/en/20/core/constraints.html), [documentação do Pydantic sobre validação de models](https://docs.pydantic.dev/latest/concepts/models/), e [restfulapi.net sobre semântica dos métodos HTTP](https://restfulapi.net/http-methods/).*
 
 #### Bug real que encontramos e corrigimos: `ForeignKey` sem integridade aplicada
 
@@ -304,7 +319,7 @@ Qualquer pessoa que interceptar um JWT consegue ler o cabeçalho e os dados — 
 
 ## 🟩 Banco de dados
 
-**Status:** PostgreSQL 18 rodando localmente, 4 tabelas relacionadas por `ForeignKey`
+**Status:** PostgreSQL 18 rodando localmente, 5 tabelas relacionadas por `ForeignKey`
 
 ### Como acessar
 
@@ -325,9 +340,15 @@ filmes                  alugueis                    agencias
 ├── streamings (JSON)                                ├── nome
 └── valor                                             ├── email
                                                         └── senha_hash
+
+favoritos
+├── id (PK)
+├── usuario_id (FK)  ──► usuarios.id
+├── filme_id (FK)    ──► filmes.id
+└── UNIQUE(usuario_id, filme_id)
 ```
 
-`alugueis` é a tabela "do meio" de uma relação com **três** pontas — cada linha liga um `filme_id`, um `agencia_id` e um `usuario_id`, com a data em que o aluguel foi feito. Isso é o que permite cada usuário ver só o próprio histórico (`GET /alugueis/` filtra por `usuario_id` automaticamente, a partir do token). Deletar um filme, agência ou usuário que tenha aluguéis associados é bloqueado pelo banco (ver seção de Backend, "Aprofundando").
+`alugueis` é a tabela "do meio" de uma relação com **três** pontas — cada linha liga um `filme_id`, um `agencia_id` e um `usuario_id`, com a data em que o aluguel foi feito. Isso é o que permite cada usuário ver só o próprio histórico (`GET /alugueis/` filtra por `usuario_id` automaticamente, a partir do token). `favoritos` é mais simples — só **duas** pontas (`usuario_id` + `filme_id`) — mas carrega uma restrição que `alugueis` não tem: uma `UNIQUE(usuario_id, filme_id)` que impede a mesma pessoa favoritar o mesmo filme duas vezes a nível de banco, não só de código (ver "Conceitos de Python/backend", abaixo). Deletar um filme, agência ou usuário que tenha aluguéis (ou favoritos) associados é bloqueado pelo banco (ver seção de Backend, "Aprofundando").
 
 ### Por que Postgres em vez de SQLite
 
@@ -348,6 +369,6 @@ Uma "locadora virtual" fictícia: catálogo de filmes por categoria, com login/c
 
 **O que falta pra fechar o produto:**
 
-- Ligar favoritos e histórico de aluguel a uma tela de "minha conta" de verdade (hoje o login existe e o aluguel já é por usuário, mas ainda não há uma página que reúna isso pro usuário ver)
+- Reunir favoritos e histórico de aluguel numa tela de "minha conta" de verdade (hoje os dois já existem — favoritos e aluguéis são ligados à conta e persistem no backend — mas só aparecem como painéis avulsos no menu do perfil, não numa página própria)
 - A escolha manual de tema claro/escuro é pensada pra ficar nas configurações da conta
 - Imagens reais de filme, vindas de uma API externa (ex: IMDB/TMDb) — ver a seção de Backend, "Aprofundando", pros cuidados de integridade que isso exige

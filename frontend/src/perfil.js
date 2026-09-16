@@ -1,6 +1,7 @@
 import { estaLogado, obterUsuario, sair } from "./auth.js";
 import { abrirConta, iniciarConta } from "./conta.js";
-import { obterFilmesFavoritos, criarCardFilme } from "./catalogo.js";
+import { obterFilmesFavoritos, criarCardFilme, atualizarCardsFavoritos } from "./catalogo.js";
+import { carregarFavoritos, sincronizarFavoritosAposLogin } from "./favoritos.js";
 import { buscarMeusAlugueis } from "./movies.js";
 import { formatarPreco } from "./utilitarios.js";
 import { obterTema, definirTema } from "./tema.js";
@@ -168,6 +169,7 @@ menuPerfil.addEventListener("click", (evento) => {
   } else if (acao === "sair") {
     sair();
     atualizarAreaConta();
+    carregarFavoritos().then(atualizarCardsFavoritos);
   }
 });
 
@@ -196,7 +198,13 @@ painelFundo.addEventListener("click", (evento) => {
   }
 });
 
+async function aoAutenticar() {
+  await sincronizarFavoritosAposLogin();
+  atualizarAreaConta();
+  atualizarCardsFavoritos();
+}
+
 export function iniciarPerfil() {
   atualizarAreaConta();
-  iniciarConta(atualizarAreaConta);
+  iniciarConta(aoAutenticar);
 }

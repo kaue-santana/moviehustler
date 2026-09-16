@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
-from app.routes import filmes, agencias, alugueis, auth
+from app.routes import filmes, agencias, alugueis, auth, favoritos
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,6 +19,7 @@ app.include_router(filmes.router)
 app.include_router(agencias.router)
 app.include_router(alugueis.router)
 app.include_router(auth.router)
+app.include_router(favoritos.router)
 
 
 @app.get("/")

@@ -137,6 +137,10 @@ export function obterFilmesFavoritos() {
   return filmes.filter((filme) => ehFavorito(filme.id));
 }
 
+export function atualizarCardsFavoritos() {
+  renderizarFilmes();
+}
+
 export function irParaInicio() {
   termoBusca = "";
   campoBusca.value = "";
