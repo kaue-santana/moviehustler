@@ -1,0 +1,262 @@
+body {
+  min-height: 100vh;
+}
+
+.admin-marca {
+  margin: 0;
+  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 0.5px;
+  color: var(--cor-titulo);
+}
+
+.admin-marca span {
+  color: var(--azul-blockbuster);
+}
+
+.admin-marca small {
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+  vertical-align: middle;
+}
+
+/* --- login --- */
+
+.admin-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.admin-login-caixa {
+  width: 100%;
+  max-width: 360px;
+  background: var(--cor-superficie);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px var(--cor-sombra);
+  text-align: center;
+}
+
+.admin-login-caixa .admin-marca {
+  margin-bottom: 1.5rem;
+}
+
+.admin-login-caixa form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+/* --- painel --- */
+
+.admin-painel {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.admin-conta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.admin-abas {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+  overflow-x: auto;
+}
+
+.admin-aba {
+  border: none;
+  background: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-aba:hover {
+  background: var(--cor-acento-suave);
+}
+
+.admin-aba.ativa {
+  background: var(--cor-acento);
+  color: var(--branco);
+}
+
+.admin-conteudo {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.admin-secao-titulo {
+  font-family: "Bebas Neue", "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0.4px;
+  color: var(--cor-titulo);
+  margin: 2rem 0 0.75rem;
+}
+
+.admin-secao-titulo:first-child {
+  margin-top: 0;
+}
+
+.admin-carregando,
+.admin-vazio,
+.admin-erro {
+  color: var(--cor-texto-suave);
+  padding: 1rem 0;
+}
+
+.admin-erro {
+  color: var(--cor-perigo);
+}
+
+/* --- cards --- */
+
+.admin-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-card {
+  flex: 1;
+  min-width: 200px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-card-rotulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-card-valor {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--cor-acento);
+}
+
+/* --- tabela --- */
+
+.admin-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cor-superficie);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.admin-tabela th,
+.admin-tabela td {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.admin-tabela th {
+  background: var(--cor-superficie-alt);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--cor-texto-suave);
+}
+
+.admin-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-botao-mini {
+  border: 1px solid var(--cor-acento);
+  background: none;
+  color: var(--cor-acento);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.admin-botao-mini:hover {
+  background: var(--cor-acento-suave);
+}
+
+.admin-botao-perigo {
+  border-color: var(--cor-perigo);
+  color: var(--cor-perigo);
+}
+
+.admin-botao-perigo:hover {
+  background: rgba(176, 0, 32, 0.08);
+}
+
+/* --- formulário de novo filme --- */
+
+.admin-form-filme {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-form-filme input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.admin-form-filme button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.admin-form-filme .mensagem-conta {
+  grid-column: 1 / -1;
+}

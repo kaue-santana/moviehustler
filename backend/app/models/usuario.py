@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from app.database import Base
 
 
@@ -9,3 +9,4 @@ class Usuario(Base):
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     senha_hash = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)

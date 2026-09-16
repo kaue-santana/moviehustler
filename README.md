@@ -2,9 +2,9 @@
 
 Locadora de filmes virtual, estilo Blockbuster anos 2000. Projeto de estudo full-stack — este README é atualizado conforme cada parte nova é estudada/construída, organizado por categoria.
 
-**Status geral:** stack completa funcionando — backend com CRUD, autenticação JWT e PostgreSQL; frontend com login/cadastro conectados, aluguel protegido por conta e favoritos sincronizados com a API (persistem entre dispositivos, com merge automático do que foi favoritado como visitante)
+**Status geral:** stack completa funcionando — backend com CRUD, autenticação JWT e PostgreSQL; frontend com login/cadastro conectados, aluguel protegido por conta e favoritos sincronizados com a API (persistem entre dispositivos, com merge automático do que foi favoritado como visitante); painel administrativo separado (`admin.html`), com login próprio, relatórios de faturamento em SQL e gestão de clientes/vendas/produtos/devoluções
 
-**Índice:** [Frontend](#--frontend-javascript-html-css) · [Backend](#--backend-python) ([bug do ForeignKey](#bug-real-que-encontramos-e-corrigimos-foreignkey-sem-integridade-aplicada) · [hash/sal/JWT](#aprofundando-hash-de-senha-sal-e-jwt)) · [Banco de dados](#--banco-de-dados) · [Visão geral do produto](#visão-geral-do-produto-o-que-o-moviehustler-é)
+**Índice:** [Frontend](#--frontend-javascript-html-css) · [Backend](#--backend-python) ([bug do ForeignKey](#bug-real-que-encontramos-e-corrigimos-foreignkey-sem-integridade-aplicada) · [hash/sal/JWT](#aprofundando-hash-de-senha-sal-e-jwt) · [acesso admin escondido](#aprofundando-por-que-acesso-escondido-não-pode-significar-url-secreta) · [bug do JOIN/select_from](#bug-real-dbqueryfuncavg-não-sabe-de-onde-partir-o-join) · [faturamento médio ambíguo](#aprofundando-por-que-faturamento-médio-sozinho-é-uma-pergunta-incompleta)) · [Banco de dados](#--banco-de-dados) · [Visão geral do produto](#visão-geral-do-produto-o-que-o-moviehustler-é)
 
 ---
 
@@ -40,21 +40,25 @@ Pra parar o servidor, `Ctrl+C` no terminal onde ele está rodando.
 ```
 frontend/
 ├── public/
-│   └── index.html       # estrutura da página
+│   ├── index.html       # estrutura da página (cliente)
+│   └── admin.html         # estrutura do painel administrativo — não linkada do site do cliente
 └── src/
-    ├── app.js            # ponto de entrada — importa e liga tudo
-    ├── config.js          # URL_API — configuração compartilhada
-    ├── auth.js             # login/registro/token — fala com /auth da API
-    ├── conta.js              # modal de login/cadastro (abas, formulários)
-    ├── perfil.js               # botão de conta, menu do perfil, painéis (Perfil/Pedidos/Configurações)
-    ├── tema.js                   # modo claro/escuro/sistema — grava a escolha no localStorage
-    ├── catalogo.js                 # grade de filmes, filtros, busca, ordenação
-    ├── modal.js                      # popup de detalhes do filme + fluxo de aluguel
-    ├── carrinho.js                     # estado e painel do carrinho
-    ├── favoritos.js                      # estado dos favoritos (♥) — API quando logado, localStorage quando visitante
-    ├── movies.js                           # dados do catálogo (filmes, agências, aluguel)
-    ├── utilitarios.js                        # funções auxiliares (formatação, busca)
-    └── style.css                               # visual (paleta azul/amarelo)
+    ├── app.js            # ponto de entrada do site do cliente — importa e liga tudo
+    ├── admin.js            # ponto de entrada do painel admin — login, abas, tabelas, relatórios
+    ├── config.js             # URL_API — configuração compartilhada
+    ├── auth.js                # login/registro/token — fala com /auth da API (usado pelos dois pontos de entrada)
+    ├── adminApi.js              # chamadas às rotas /admin/* — sempre com o token no header
+    ├── conta.js                   # modal de login/cadastro do cliente (abas, formulários)
+    ├── perfil.js                    # botão de conta, menu do perfil, painéis (Perfil/Pedidos/Configurações)
+    ├── tema.js                        # modo claro/escuro/sistema — grava a escolha no localStorage
+    ├── catalogo.js                      # grade de filmes, filtros, busca, ordenação
+    ├── modal.js                           # popup de detalhes do filme + fluxo de aluguel
+    ├── carrinho.js                          # estado e painel do carrinho
+    ├── favoritos.js                           # estado dos favoritos (♥) — API quando logado, localStorage quando visitante
+    ├── movies.js                                # dados do catálogo (filmes, agências, aluguel) + CRUD de filme (admin)
+    ├── utilitarios.js                             # funções auxiliares (formatação, busca)
+    ├── style.css                                    # visual do site do cliente (paleta azul/amarelo)
+    └── admin.css                                      # visual do painel admin (reaproveita os tokens de style.css)
 ```
 
 ### O que já existe
@@ -72,6 +76,12 @@ frontend/
 - Botão do carrinho **fixo no canto inferior direito da tela** (sempre visível, mesmo rolando a página) — separado da área de conta, que fica no topo
 - **Hierarquia tipográfica com 3 níveis** (ver "Aprofundando" abaixo pro porquê): **"Machine Medium"** (ITC Machine — a fonte real da marca Blockbuster) só no logo, uso único; **"Bebas Neue"** (Google Fonts) reservada só pra títulos de verdade — seções, nome do filme no popup, título dos painéis, título dos cards de filme; **"Manrope"** (Google Fonts) em tudo o resto — texto corrido E também botões/abas/itens de menu, variando peso (negrito nos controles, regular no texto) em vez de trocar de fonte pra cada elemento
 - Persistência local via `localStorage` (carrinho, sessão de login, preferência de tema, e favoritos só enquanto deslogado)
+- **Painel administrativo** (`admin.html`, separado do site do cliente — ver ["Aprofundando: por que 'acesso escondido' não pode significar 'URL secreta'"](#aprofundando-por-que-acesso-escondido-não-pode-significar-url-secreta) na seção de Backend): login próprio (mesma API de autenticação, mas rejeita quem não é admin), com 5 abas —
+  - **Visão geral**: os 3 relatórios pedidos — faturamento por mês, filmes mais alugados e faturamento médio (que na prática virou **dois** números, ver "Aprofundando" na seção de Backend) — consumindo `/admin/relatorios/*`
+  - **Clientes**: lista de usuários cadastrados (`GET /admin/clientes/`)
+  - **Vendas**: todo o histórico de aluguéis de todo mundo (não só o do usuário logado, diferente de "Pedidos" no site do cliente), com o nome do cliente, e um botão **Marcar devolução** por linha ainda não devolvida
+  - **Produtos**: lista de filmes com formulário de cadastro (`POST /filmes/`) e botão de remover (`DELETE /filmes/{id}`) — reaproveita as mesmas rotas do catálogo público, agora protegidas por admin (ver "O que ainda falta" — editar filme existente não foi implementado ainda)
+  - **Devoluções**: histórico de tudo que já foi devolvido, com data do aluguel e da devolução lado a lado
 
 > **Nota sobre fontes auto-hospedadas e licença**: `frontend/src/fonts/` guarda dois arquivos servidos via `@font-face` (diferente do Bebas Neue/Manrope, que vêm de um link do Google Fonts). **`ITC Machine LT Medium.ttf`** é a fonte oficial usada no logo — é uma fonte **comercial** da ITC/Monotype; o arquivo foi fornecido pelo próprio usuário do projeto, que já possuía uma licença legítima, e **não está versionado no Git** (`.gitignore`) por não ser nosso pra redistribuir. **`Blockbuster.ttf`** (baixado do DaFont, autor Fenotype, "100% Free" segundo o próprio site) fica como *fallback* caso a fonte comercial não esteja disponível — essa sim seguiu no repositório, mas sem garantia de licença pra uso comercial, só pra estudo local.
 - Catálogo e agências vindos de verdade da API (`fetch` em `movies.js`), com tratamento de erro caso o backend esteja fora do ar
@@ -82,9 +92,9 @@ frontend/
 
 - Renovar/expirar sessão de forma amigável: hoje, se o token expirar (1 dia), a próxima tentativa de alugar simplesmente falha — falta detectar isso e reabrir o login automaticamente
 - Imagens reais de filme (capas são placeholders coloridos com o título)
-- Telas/formulário pra usar o CRUD completo do backend (cadastrar, editar, remover filme pela interface — hoje só existe via API)
 - Carrinho ainda é só local (`localStorage`) — só o aluguel em si (`POST /alugueis/`) é persistido no backend; "finalizar compra" não faz nada no servidor ainda
 - Editar dados da conta (nome/e-mail/senha) — o item "Configurações" ainda só tem o seletor de tema
+- No painel admin: **editar** um filme existente (só criar e remover foram implementados — um `PUT /filmes/{id}` já existe no backend, falta só o formulário); paginação/busca nas tabelas de Clientes e Vendas (hoje carregam tudo de uma vez, ok pros ~18 filmes/poucos usuários de um projeto de estudo, mas não escalaria); os relatórios são só tabelas, sem gráfico de verdade (nenhuma lib de chart foi usada de propósito, pra manter zero dependência externa nessa etapa)
 
 ### Conceitos de JavaScript estudados
 
@@ -110,6 +120,9 @@ Lista rápida: DOM (seleção/criação de elementos, template literals), evento
 
   *Fontes consultadas: [freeCodeCamp — How to Use the Optimistic UI Pattern](https://www.freecodecamp.org/news/how-to-use-the-optimistic-ui-pattern-with-the-useoptimistic-hook-in-react/) e [DEV Community — Oops, Our Optimistic Update Has an Error?](https://dev.to/javapixastudio/oops-our-optimistic-update-has-an-error-heres-how-to-fix-it-pbo) — os exemplos são em React (`useOptimistic`), mas o princípio (estado local muda antes da confirmação do servidor, com rollback garantido no erro) é o mesmo aplicado aqui à mão, sem framework.*
 
+- **Um segundo "app" inteiro reaproveitando os módulos do primeiro**: `admin.js` é um ponto de entrada novo (carregado por `admin.html`, não por `index.html`), mas não duplicou nada de `auth.js` — ele importa `login`, `sair`, `estaLogado` e `obterUsuario` exatamente como `conta.js`/`perfil.js` importam. Só foi possível porque `auth.js` desde o início só fala com a API e o `localStorage`, sem nenhuma referência a elementos do DOM do site do cliente (nenhum `document.getElementById` lá dentro) — é o mesmo motivo, aplicado num nível maior, de `security.py` ser reaproveitável no backend: uma peça que só manipula dados, sem saber quem é "dono" da tela, serve qualquer tela que precisar dela.
+- **Checagem de admin no frontend é conveniência, não segurança**: depois do login em `admin.js`, `if (!usuario.is_admin)` decide só se o painel *aparece* — quem realmente impede um cliente comum de ver dados de outros clientes é o backend (`get_admin_atual`, que devolve `403` pra qualquer token de usuário sem `is_admin`). Se essa checagem existisse só no frontend, bastaria alguém abrir o DevTools e chamar `fetch("/admin/clientes/", ...)` direto pra contornar. A regra geral (que já vale pra tudo nesse projeto, não só o admin): **toda validação client-side existe pra dar feedback rápido pro usuário legítimo, nunca pra ser a única barreira** — a fonte da verdade sobre permissão é sempre o servidor.
+
 #### Bug real: o atributo `hidden` sendo ignorado por causa do `display: flex`
 
 Depois de adicionar o menu do perfil e o modal de login, um teste automatizado (Playwright, headless) pegou um bug visual sério: o formulário de cadastro aparecia **junto** com o de login, os dois sobrepostos, mesmo o de cadastro tendo o atributo `hidden` no HTML. O mesmo problema afetava o contador do carrinho, que mostrava "0" na tela mesmo com `hidden` ativo.
@@ -130,7 +143,7 @@ O `!important` aqui não é um "jeito preguiçoso de resolver" — é a ferramen
 
 ## 🟦 Backend (Python)
 
-**Status:** CRUD completo de filmes, agências e aluguéis — rodando sobre PostgreSQL, conectado ao frontend
+**Status:** CRUD completo de filmes, agências e aluguéis — rodando sobre PostgreSQL, conectado ao frontend, com área administrativa protegida por `is_admin`
 
 ### Como rodar
 
@@ -156,6 +169,12 @@ JWT_SECRET_KEY=gere_uma_chave_aleatoria_com_python_-c_"import_secrets;print(secr
 
 Servidor sobe em `http://localhost:8000`. Documentação automática (Swagger) em `http://localhost:8000/docs`.
 
+Pra acessar o painel administrativo (`frontend/public/admin.html`), primeiro crie uma conta normal pelo site do cliente (ou via `POST /auth/registrar`), depois promova ela a admin:
+
+```bash
+./.venv/Scripts/python tornar_admin.py seu-email@exemplo.com
+```
+
 ### Estrutura
 
 ```
@@ -166,38 +185,44 @@ backend/
 │   ├── database.py         # engine + sessão do PostgreSQL (lê DATABASE_URL do .env)
 │   ├── main.py               # cria as tabelas, liga CORS, inclui as rotas
 │   ├── security.py            # hash de senha (bcrypt) + criar/decodificar token JWT — sem tocar no banco
-│   ├── dependencies.py         # get_usuario_atual — a dependência que outras rotas usam pra exigir login
+│   ├── dependencies.py         # get_usuario_atual (exige login) e get_admin_atual (exige login + is_admin)
 │   ├── models/
 │   │   ├── filme.py           # tabela `filmes` (SQLAlchemy)
 │   │   ├── agencia.py          # tabela `agencias`
 │   │   ├── aluguel.py           # tabela `alugueis` (liga filme + agência + usuario por ForeignKey)
 │   │   ├── favorito.py           # tabela `favoritos` (liga usuario + filme, único por par)
-│   │   └── usuario.py            # tabela `usuarios` (nome, email, senha_hash)
+│   │   ├── devolucao.py           # tabela `devolucoes` (liga a um aluguel, único por aluguel)
+│   │   └── usuario.py            # tabela `usuarios` (nome, email, senha_hash, is_admin)
 │   ├── schemas/
 │   │   ├── filme.py           # formato de entrada/saída de /filmes
 │   │   ├── agencia.py          # formato de entrada/saída de /agencias
-│   │   ├── aluguel.py           # formato de entrada/saída de /alugueis
+│   │   ├── aluguel.py           # formato de entrada/saída de /alugueis (AluguelOut e VendaOut, com o cliente)
 │   │   ├── favorito.py          # formato de entrada/saída de /favoritos
+│   │   ├── devolucao.py          # formato de entrada/saída de /admin/devolucoes
+│   │   ├── relatorio.py           # formato de saída dos 3 relatórios de /admin/relatorios
 │   │   └── usuario.py            # UsuarioCreate, UsuarioOut, Token
 │   └── routes/
-│       ├── filmes.py          # endpoints de /filmes
+│       ├── filmes.py          # endpoints de /filmes (escrita agora exige admin)
 │       ├── agencias.py         # endpoints de /agencias
 │       ├── alugueis.py          # endpoints de /alugueis
 │       ├── favoritos.py         # endpoints de /favoritos
+│       ├── admin.py              # clientes, vendas, devoluções e relatórios — tudo exige admin
 │       └── auth.py               # /auth/registrar, /auth/login, /auth/me
 ├── seed.py                 # popula o banco com filmes/agências que já existiam no frontend
+├── tornar_admin.py          # script de linha de comando pra promover uma conta existente a admin
 └── requirements.txt
 ```
 
 ### O que já existe
 
 **Filmes**
-- `GET /filmes/` — lista o catálogo completo
+- `GET /filmes/` — lista o catálogo completo (pública, sem login — é o que abastece o site do cliente)
 - `GET /filmes/{id}` — busca um filme específico (404 se não existir)
-- `POST /filmes/` — cadastra um filme novo
-- `PUT /filmes/{id}` — substitui os dados de um filme existente (404 se não existir)
-- `DELETE /filmes/{id}` — remove um filme (404 se não existir; **409** se o filme tiver algum aluguel no histórico — ver "Aprofundando" abaixo)
+- `POST /filmes/` — **requer admin** — cadastra um filme novo
+- `PUT /filmes/{id}` — **requer admin** — substitui os dados de um filme existente (404 se não existir)
+- `DELETE /filmes/{id}` — **requer admin** — remove um filme (404 se não existir; **409** se o filme tiver algum aluguel no histórico — ver "Aprofundando" abaixo)
 - Modelo `Filme` com `generos` e `streamings` guardados como `JSON` (o SQLAlchemy serializa a lista Python pra string e desserializa de volta sozinho)
+- *(Gap real que corrigimos ao construir a área admin: até então, `POST`/`PUT`/`DELETE` de `/filmes/` não exigiam login nenhum — qualquer pessoa com acesso ao Swagger podia alterar o catálogo. Isso passou despercebido enquanto não havia conceito de "dono do catálogo"; ganhou uma correção real, não só a área admin nova, no mesmo momento em que essa distinção passou a existir.)*
 
 **Agências e aluguéis**
 - `GET /agencias/` — lista as 4 agências fixas (mesmas que já existiam em `movies.js`, agora vindas do banco)
@@ -211,6 +236,17 @@ backend/
 - `DELETE /favoritos/{filme_id}` — **requer login** — remove um favorito (404 se não existir pra esse usuário)
 - Modelo `Favorito` com `UniqueConstraint(usuario_id, filme_id)` — o banco garante que não existam dois registros do mesmo filme favoritado duas vezes pro mesmo usuário
 
+**Administração** — todas as rotas abaixo exigem `get_admin_atual` (login **e** `Usuario.is_admin == True`; ver ["Aprofundando" abaixo](#aprofundando-por-que-acesso-escondido-não-pode-significar-url-secreta) pra por que essa checagem no servidor é a parte que importa, não a URL "escondida")
+- `GET /admin/clientes/` — lista todos os usuários cadastrados
+- `GET /admin/vendas/` — histórico de aluguéis de **todos** os usuários (não só o do token, diferente de `GET /alugueis/`), cada um já com o cliente que alugou (`VendaOut`, que estende `AluguelOut` com o campo `usuario`)
+- `GET /admin/devolucoes/` — histórico de devoluções já registradas
+- `POST /admin/devolucoes/` — registra a devolução de um aluguel (`aluguel_id`); 404 se o aluguel não existir, **409** se esse aluguel já tiver sido devolvido antes (o mesmo padrão de "conflito de estado" já usado em `DELETE /filmes/{id}`)
+- `GET /admin/relatorios/faturamento-mensal` — soma o valor dos filmes alugados, agrupado por mês (`date_trunc('month', ...)`)
+- `GET /admin/relatorios/filmes-mais-alugados` — conta quantas vezes cada filme foi alugado, do mais pro menos alugado
+- `GET /admin/relatorios/faturamento-medio` — devolve **duas** médias diferentes (`ticket_medio` e `media_mensal`) de propósito — ver "Aprofundando" abaixo pra por que "faturamento médio" sozinho é uma pergunta ambígua
+- Modelo `Devolucao`: tabela separada de `Aluguel` (não um campo `devolvido` nele), com `aluguel_id` **único** — cada aluguel só pode ser devolvido uma vez, e a data da devolução fica registrada à parte da data do aluguel, formando um histórico verdadeiro de quando cada filme voltou
+- Não existe rota de API pra criar um admin — de propósito. O primeiro admin é promovido via `tornar_admin.py` (linha de comando, acesso direto ao banco), pra virar admin exigir mais do que só estar logado como qualquer usuário comum
+
 **Autenticação**
 - `POST /auth/registrar` — cria uma conta (nome, email, senha); 409 se o e-mail já estiver em uso; a senha nunca volta na resposta, só o hash fica salvo no banco
 - `POST /auth/login` — recebe email/senha (como formulário, não JSON — é o padrão OAuth2 que o Swagger entende nativamente) e devolve um token JWT; 401 se e-mail ou senha estiverem errados
@@ -223,7 +259,8 @@ backend/
 
 ### O que ainda falta
 
-- Interface no frontend pra usar `POST`/`PUT`/`DELETE` de filmes (hoje só testados via Swagger/curl)
+- `PUT /filmes/{id}` já existe e já exige admin, mas não tem formulário de edição no painel (só criar/remover) — ver seção de Frontend
+- Múltiplos níveis de admin (hoje é binário: `is_admin` é `True` ou `False`, sem meio-termo tipo "só vê relatório, não edita catálogo")
 - *(melhoria opcional, não urgente)* Trocar `bcrypt` por `Argon2id` no hash de senha — é a recomendação atual do OWASP; ver "Aprofundando" abaixo pro porquê
 
 ### Conceitos de Python/backend estudados
@@ -247,6 +284,8 @@ backend/
 - **Escopar dados por usuário (404 em vez de 403)**: depois de ligar `alugueis.usuario_id`, `listar_alugueis` filtra a query por `Aluguel.usuario_id == usuario_atual.id` — cada pessoa só vê o próprio histórico, nunca o de outra. Em `cancelar_aluguel`, o filtro combina `id` **e** `usuario_id` na mesma consulta: se o aluguel existe mas é de outra pessoa, a API devolve `404 Not Found` (não `403 Forbidden`) de propósito — `403` confirmaria pro atacante que aquele `id` existe e pertence a alguém, `404` não revela nada.
 - **`UniqueConstraint` composta em `__table_args__`**: o model `Favorito` declara `UniqueConstraint("usuario_id", "filme_id")` — diferente de um `unique=True` numa coluna só (que vale pra ela sozinha), isso restringe a **combinação** das duas colunas: qualquer usuário pode favoritar qualquer filme, e qualquer filme pode ser favoritado por várias pessoas, mas o *par* (`usuario_id`, `filme_id`) não pode se repetir. É o banco garantindo, estruturalmente, a mesma regra que `usuarios.email` já garantia sozinho (`unique=True`) — só que aqui a unicidade depende de duas colunas juntas, não de uma.
 - **Desenhando `POST /favoritos/` pra ser idempotente de propósito (a exceção que confirma a regra)**: a seção "Aprofundando" logo abaixo explica por que `POST` normalmente *não* é idempotente no projeto (`POST /filmes/` e `POST /alugueis/` criam um registro novo a cada chamada). `adicionar_favorito` quebra esse padrão de propósito: antes de inserir, ele consulta se aquele par `usuario_id`+`filme_id` já existe e, se existir, devolve o registro existente em vez de tentar criar outro (que geraria um erro de `UniqueConstraint` do banco). A razão é o próprio fluxo do frontend: `sincronizarFavoritosAposLogin()` reenvia *todos* os favoritos salvos como visitante pro `POST /favoritos/` depois do login, sem saber quais já existem na conta — chamar a mesma rota duas vezes com o mesmo filme precisa ser seguro, não gerar duplicata nem erro.
+- **A cadeia de dependências que o próprio README já previa**: lá em cima, na primeira versão desta seção (antes de existir login), tinha uma nota dizendo que dependências poderiam depender de outras dependências, e que isso "seria a base da autenticação" — na época só um exemplo hipotético. `get_admin_atual` é essa cadeia acontecendo de verdade, um nível mais fundo: `get_admin_atual` depende de `get_usuario_atual` (`usuario_atual: Usuario = Depends(get_usuario_atual)`), que por sua vez depende de `get_db`. Uma rota administrativa declara só `Depends(get_admin_atual)` e ganha, de graça, as duas camadas de baixo — sessão de banco aberta/fechada corretamente **e** usuário autenticado — sem repetir nenhuma delas.
+- **`UniqueConstraint` numa FK sozinha = relação um-pra-um**: `models/devolucao.py` declara `aluguel_id = Column(Integer, ForeignKey("alugueis.id"), unique=True)` — diferente da `UniqueConstraint` composta de `Favorito` (duas colunas juntas), aqui é uma coluna só marcada `unique=True`, e isso muda o *tipo* de relação. Sem o `unique=True`, `aluguel_id` seria uma FK comum (um aluguel poderia, em teoria, ter várias linhas de devolução apontando pra ele). Com ele, o banco impede fisicamente mais de uma devolução pro mesmo aluguel — é o jeito padrão de modelar "um-pra-um" em SQL relacional (que não tem um tipo de relação dedicado pra isso, só "um-pra-muitos" via FK simples e "muitos-pra-muitos" via tabela de associação).
 
 #### Aprofundando: como as peças se encaixam
 
@@ -315,11 +354,56 @@ Qualquer pessoa que interceptar um JWT consegue ler o cabeçalho e os dados — 
 
 *Fontes consultadas nesta seção: [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) e [RFC 8725 — JSON Web Token Best Current Practices](https://datatracker.ietf.org/doc/html/rfc8725).*
 
+#### Aprofundando: por que "acesso escondido" não pode significar "URL secreta"
+
+O pedido original era um painel admin com "acesso escondido de clientes comuns". A forma mais simples — e mais tentadora — seria só não colocar nenhum link pro `admin.html` no menu do cliente, e contar com o fato de ninguém adivinhar essa URL. Pesquisando se isso seria suficiente antes de decidir a arquitetura, a resposta da literatura de segurança é direta e unânime: **isso tem nome — *security through obscurity* — e é tratado como antipadrão**, não como uma camada válida de proteção. O motivo é prático, não filosófico: uma URL "escondida" aparece no código-fonte do `admin.js` (que qualquer pessoa pode abrir no DevTools), no histórico do navegador, em logs de proxy/CDN, ou é simplesmente encontrada por uma ferramenta de varredura que tenta caminhos comuns (`/admin`, `/painel`, etc.). Nada disso exige "hackear" nada — é leitura de informação pública.
+
+Por isso o projeto trata as duas coisas como camadas **completamente separadas**, com responsabilidades diferentes:
+
+- **Não ter o link no menu do cliente** é só uma escolha de produto/UX — evita que um cliente comum clique sem querer numa tela que não é pra ele. Isso não protege nada, é conveniência.
+- **`get_admin_atual` rejeitando com `403` quem não tem `is_admin=True`** é a proteção de verdade — ela roda no servidor, em toda chamada, e não depende de ninguém "não saber" a URL. Um cliente comum que descobre `admin.html` e abre no navegador só vê a tela de login; se tentasse chamar `GET /admin/clientes/` direto pelo DevTools com o próprio token, receberia `403` do mesmo jeito.
+
+A regra que a pesquisa confirma, e que já orientava esse projeto antes mesmo do admin existir (é o mesmo motivo de `get_usuario_atual` proteger `/alugueis/` no backend, não só esconder o botão "Alugar" no frontend quando deslogado): **toda decisão de autorização precisa ser verificada no servidor, em toda requisição — o cliente (a URL, o botão escondido, o JavaScript) pode no máximo evitar que um usuário legítimo erre o caminho, nunca é a barreira contra alguém mal-intencionado.**
+
+*Fontes consultadas: [OWASP Juice Shop — Security through Obscurity](https://pwning.owasp-juice.shop/companion-guide/latest/part2/security-through-obscurity.html), [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) e [Troy Hunt — OWASP Top 10 for .NET developers part 8: Failure to Restrict URL Access](https://www.troyhunt.com/owasp-top-10-for-net-developers-part-8/) (a categoria mais antiga do OWASP Top 10 dedicada exatamente a esse erro, hoje unificada em "Broken Access Control").*
+
+#### Bug real: `db.query(func.avg(...))` não sabe de onde partir o `JOIN`
+
+Construindo `GET /admin/relatorios/faturamento-medio`, a primeira versão quebrou com `500` assim que teve dado de verdade pra calcular:
+
+```
+sqlalchemy.exc.InvalidRequestError: Don't know how to join to <Mapper at ...; Filme>.
+Please use the .select_from() method to establish an explicit left side...
+```
+
+O código original era `db.query(func.avg(Filme.valor)).join(Aluguel, Aluguel.filme_id == Filme.id)`. Parece razoável — tem uma coluna (`Filme.valor`) e uma condição de junção explícita — mas o SQLAlchemy 2.0 precisa saber qual é a tabela "de partida" (o `FROM`) antes de decidir como encaixar o `JOIN`, e `func.avg(Filme.valor)` é só uma *expressão* sobre uma coluna, não uma entidade que estabeleça isso sozinha. Quando a query já tem uma entidade completa entre as colunas selecionadas (como em `db.query(Filme.id, Filme.titulo, func.count(...))`, usado no relatório de filmes mais alugados), o SQLAlchemy consegue inferir o `FROM` a partir dela; quando só existe uma função de agregação, não tem o que inferir.
+
+A correção foi adicionar `.select_from(Aluguel)` antes do `.join(Filme, ...)`, deixando explícito qual tabela é o ponto de partida:
+
+```python
+db.query(func.avg(Filme.valor)).select_from(Aluguel).join(Filme, Aluguel.filme_id == Filme.id)
+```
+
+Vale registrar que esse comportamento — exigir uma referência explícita em vez de adivinhar — é deliberado desde o SQLAlchemy 1.4: versões anteriores tentavam inferir o `JOIN` com mais liberdade, o que ocasionalmente produzia `CROSS JOIN`s silenciosos e errados quando a inferência dava no meio do caminho errado. Preferir um erro explícito (`InvalidRequestError`) a uma consulta ambígua rodando silenciosamente é a mesma filosofia por trás do `422` do Pydantic ou do `409` que já usamos em várias rotas: falhar alto e cedo é melhor que produzir um número errado sem avisar ninguém — e um relatório de faturamento é exatamente o tipo de lugar onde um número errado sem aviso pode passar despercebido por muito tempo.
+
+*Fontes consultadas: [documentação do SQLAlchemy sobre `join()` explícito](https://docs.sqlalchemy.org/en/20/orm/queryguide/select.html#explicit-join) e [dev.to — SQLAlchemy: prevent implicit cross join](https://dev.to/moser/sqlalchemy-prevent-implicit-cross-join-5g5a), que documenta a mudança de comportamento entre versões.*
+
+#### Aprofundando: por que "faturamento médio" sozinho é uma pergunta incompleta
+
+Pedimos "faturamento médio" como uma das 3 consultas do painel — mas ao implementar, ficou claro que existe mais de uma média possível pro mesmo dado, e elas respondem perguntas diferentes:
+
+- **`ticket_medio`**: a média do valor de **cada aluguel individual**, sem olhar em qual mês ele caiu — `AVG(filmes.valor)` direto sobre todas as linhas de `alugueis` (via `JOIN`). Responde "quanto vale, em média, um aluguel".
+- **`media_mensal`**: primeiro soma o faturamento **por mês** (uma sub-consulta agrupada por `date_trunc('month', ...)`), e só depois tira a média *dessas somas mensais* — uma "média de médias" (ou, mais preciso aqui, uma "média de somas agrupadas"). Responde "quanto o negócio fatura, em média, por mês".
+
+As duas podem divergir bastante, e o motivo é o mesmo por trás do fenômeno conhecido como **Simpson's paradox**: uma média simples sobre linhas individuais dá peso igual a cada *aluguel*; uma média sobre totais mensais dá peso igual a cada *mês*, não importa quantos aluguéis ele teve. Um mês com 1 aluguel de R$ 9,90 pesa, na `media_mensal`, exatamente igual a um mês com 50 aluguéis somando R$ 500 — algo que a `ticket_medio` nunca faria, porque ali cada aluguel conta um por um. Pesquisando o tema pra entender se isso era só uma curiosidade ou um erro real de se cometer, a literatura de estatística confirma que é um erro comum de verdade: **tirar a média de médias sem ponderar pelo tamanho de cada grupo produz um número que não corresponde a nenhuma pergunta de negócio sensata**, a não ser que "peso igual por mês" seja *exatamente* a pergunta que se quer responder. É por isso que o endpoint devolve os dois números nomeados explicitamente, em vez de escolher um sozinho e chamar de "faturamento médio" sem qualificação — a ambiguidade fica visível pra quem for ler o relatório, não escondida atrás de uma escolha arbitrária de implementação.
+
+*Fontes consultadas: [Simpson's Paradox — Queen Mary University of London](https://www.eecs.qmul.ac.uk/~norman/papers/probability_puzzles/simpson.html) e [Wikipedia — Simpson's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox), sobre por que médias agregadas em grupos de tamanhos diferentes não são intercambiáveis com a média sobre os dados originais.*
+
 ---
 
 ## 🟩 Banco de dados
 
-**Status:** PostgreSQL 18 rodando localmente, 5 tabelas relacionadas por `ForeignKey`
+**Status:** PostgreSQL 18 rodando localmente, 6 tabelas relacionadas por `ForeignKey`
 
 ### Como acessar
 
@@ -339,16 +423,23 @@ filmes                  alugueis                    agencias
 ├── sinopse                                  └───►  ├── id (PK)
 ├── streamings (JSON)                                ├── nome
 └── valor                                             ├── email
-                                                        └── senha_hash
+                                                        ├── senha_hash
+                                                        └── is_admin
 
 favoritos
 ├── id (PK)
 ├── usuario_id (FK)  ──► usuarios.id
 ├── filme_id (FK)    ──► filmes.id
 └── UNIQUE(usuario_id, filme_id)
+
+devolucoes
+├── id (PK)
+├── aluguel_id (FK)  ──► alugueis.id
+├── data_devolucao
+└── UNIQUE(aluguel_id)
 ```
 
-`alugueis` é a tabela "do meio" de uma relação com **três** pontas — cada linha liga um `filme_id`, um `agencia_id` e um `usuario_id`, com a data em que o aluguel foi feito. Isso é o que permite cada usuário ver só o próprio histórico (`GET /alugueis/` filtra por `usuario_id` automaticamente, a partir do token). `favoritos` é mais simples — só **duas** pontas (`usuario_id` + `filme_id`) — mas carrega uma restrição que `alugueis` não tem: uma `UNIQUE(usuario_id, filme_id)` que impede a mesma pessoa favoritar o mesmo filme duas vezes a nível de banco, não só de código (ver "Conceitos de Python/backend", abaixo). Deletar um filme, agência ou usuário que tenha aluguéis (ou favoritos) associados é bloqueado pelo banco (ver seção de Backend, "Aprofundando").
+`alugueis` é a tabela "do meio" de uma relação com **três** pontas — cada linha liga um `filme_id`, um `agencia_id` e um `usuario_id`, com a data em que o aluguel foi feito. Isso é o que permite cada usuário ver só o próprio histórico (`GET /alugueis/` filtra por `usuario_id` automaticamente, a partir do token). `favoritos` é mais simples — só **duas** pontas (`usuario_id` + `filme_id`) — mas carrega uma restrição que `alugueis` não tem: uma `UNIQUE(usuario_id, filme_id)` que impede a mesma pessoa favoritar o mesmo filme duas vezes a nível de banco, não só de código (ver "Conceitos de Python/backend", abaixo). `devolucoes` liga a um **único** aluguel (`UNIQUE(aluguel_id)`, não uma combinação de colunas) — é uma tabela separada de `alugueis` de propósito, pra guardar a data da devolução como um evento próprio, formando histórico, em vez de sobrescrever um campo na própria linha do aluguel. Deletar um filme, agência ou usuário que tenha aluguéis (ou favoritos) associados é bloqueado pelo banco (ver seção de Backend, "Aprofundando").
 
 ### Por que Postgres em vez de SQLite
 
@@ -365,10 +456,11 @@ O projeto começou no SQLite (um arquivo local, zero configuração) porque era 
 
 ## Visão geral do produto (o que o MOVIEHUSTLER é)
 
-Uma "locadora virtual" fictícia: catálogo de filmes por categoria, com login/conta, aluguel real ligado ao usuário (escolha de agência física pra retirada, registrado no backend) e carrinho — a ideia de fundo é misturar a nostalgia de locadora física com uma experiência de streaming moderna.
+Uma "locadora virtual" fictícia: catálogo de filmes por categoria, com login/conta, aluguel real ligado ao usuário (escolha de agência física pra retirada, registrado no backend), carrinho e, do outro lado, um painel pro dono do negócio acompanhar clientes, vendas, devoluções e faturamento — a ideia de fundo é misturar a nostalgia de locadora física com uma experiência de streaming moderna, incluindo a parte "de trás do balcão" que uma locadora de verdade também tinha.
 
 **O que falta pra fechar o produto:**
 
 - Reunir favoritos e histórico de aluguel numa tela de "minha conta" de verdade (hoje os dois já existem — favoritos e aluguéis são ligados à conta e persistem no backend — mas só aparecem como painéis avulsos no menu do perfil, não numa página própria)
 - A escolha manual de tema claro/escuro é pensada pra ficar nas configurações da conta
 - Imagens reais de filme, vindas de uma API externa (ex: IMDB/TMDb) — ver a seção de Backend, "Aprofundando", pros cuidados de integridade que isso exige
+- O painel admin cobre o pedido original (clientes, vendas, produtos, devoluções, os 3 relatórios e um login escondido), mas ainda é só tabelas — nenhum gráfico de verdade, edição de filme existente, ou paginação (ver "O que ainda falta" nas seções de Frontend/Backend)

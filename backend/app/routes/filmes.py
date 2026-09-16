@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_admin_atual
 from app.models.filme import Filme
 from app.models.aluguel import Aluguel
+from app.models.usuario import Usuario
 from app.schemas.filme import FilmeCreate, FilmeOut
 
 router = APIRouter(prefix="/filmes", tags=["filmes"])
@@ -23,7 +25,11 @@ def buscar_filme(filme_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=FilmeOut)
-def criar_filme(filme: FilmeCreate, db: Session = Depends(get_db)):
+def criar_filme(
+    filme: FilmeCreate,
+    db: Session = Depends(get_db),
+    admin_atual: Usuario = Depends(get_admin_atual),
+):
     novo_filme = Filme(**filme.model_dump())
     db.add(novo_filme)
     db.commit()
@@ -32,7 +38,12 @@ def criar_filme(filme: FilmeCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{filme_id}", response_model=FilmeOut)
-def atualizar_filme(filme_id: int, dados: FilmeCreate, db: Session = Depends(get_db)):
+def atualizar_filme(
+    filme_id: int,
+    dados: FilmeCreate,
+    db: Session = Depends(get_db),
+    admin_atual: Usuario = Depends(get_admin_atual),
+):
     filme = db.query(Filme).filter(Filme.id == filme_id).first()
     if not filme:
         raise HTTPException(status_code=404, detail="Filme não encontrado")
@@ -46,7 +57,11 @@ def atualizar_filme(filme_id: int, dados: FilmeCreate, db: Session = Depends(get
 
 
 @router.delete("/{filme_id}")
-def deletar_filme(filme_id: int, db: Session = Depends(get_db)):
+def deletar_filme(
+    filme_id: int,
+    db: Session = Depends(get_db),
+    admin_atual: Usuario = Depends(get_admin_atual),
+):
     filme = db.query(Filme).filter(Filme.id == filme_id).first()
     if not filme:
         raise HTTPException(status_code=404, detail="Filme não encontrado")

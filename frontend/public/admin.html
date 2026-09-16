@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MOVIEHUSTLER - Painel Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="../src/style.css" />
+  <link rel="stylesheet" href="../src/admin.css" />
+</head>
+<body>
+  <div class="admin-login" id="login-admin">
+    <div class="admin-login-caixa">
+      <h1 class="admin-marca">MOVIE<span>HUSTLER</span> <small>admin</small></h1>
+      <form id="form-login-admin">
+        <div class="campo-conta">
+          <label for="admin-email">E-mail</label>
+          <input type="email" id="admin-email" placeholder="voce@email.com" required />
+        </div>
+        <div class="campo-conta">
+          <label for="admin-senha">Senha</label>
+          <input type="password" id="admin-senha" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="botao-conta-enviar">Entrar</button>
+        <p class="mensagem-conta" id="admin-login-mensagem" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-painel" id="painel-admin" hidden>
+    <header class="admin-topo">
+      <h1 class="admin-marca">MOVIE<span>HUSTLER</span> <small>admin</small></h1>
+      <div class="admin-conta">
+        <span id="admin-nome"></span>
+        <button type="button" id="admin-sair" class="admin-botao-mini">Sair</button>
+      </div>
+    </header>
+
+    <nav class="admin-abas" id="admin-abas">
+      <button type="button" class="admin-aba ativa" data-aba="visao-geral">Visão geral</button>
+      <button type="button" class="admin-aba" data-aba="clientes">Clientes</button>
+      <button type="button" class="admin-aba" data-aba="vendas">Vendas</button>
+      <button type="button" class="admin-aba" data-aba="produtos">Produtos</button>
+      <button type="button" class="admin-aba" data-aba="devolucoes">Devoluções</button>
+    </nav>
+
+    <main class="admin-conteudo" id="admin-conteudo">
+      <p class="admin-carregando">Carregando...</p>
+    </main>
+  </div>
+
+  <script type="module" src="../src/admin.js"></script>
+</body>
+</html>

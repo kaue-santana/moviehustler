@@ -11,6 +11,7 @@ class UsuarioOut(BaseModel):
     id: int
     nome: str
     email: EmailStr
+    is_admin: bool
 
     class Config:
         from_attributes = True

@@ -32,3 +32,12 @@ def get_usuario_atual(
         raise erro_credenciais
 
     return usuario
+
+
+def get_admin_atual(usuario_atual: Usuario = Depends(get_usuario_atual)) -> Usuario:
+    if not usuario_atual.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao administrador",
+        )
+    return usuario_atual

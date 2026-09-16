@@ -62,3 +62,35 @@ export async function buscarMeusAlugueis() {
 
   return resposta.json();
 }
+
+export async function criarFilme(dados) {
+  const resposta = await fetch(`${URL_API}/filmes/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${obterToken()}`,
+    },
+    body: JSON.stringify(dados),
+  });
+
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => ({}));
+    throw new Error(erro.detail || "Não foi possível criar o filme.");
+  }
+
+  return resposta.json();
+}
+
+export async function removerFilme(filmeId) {
+  const resposta = await fetch(`${URL_API}/filmes/${filmeId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${obterToken()}` },
+  });
+
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => ({}));
+    throw new Error(erro.detail || "Não foi possível remover o filme.");
+  }
+
+  return resposta.json();
+}
