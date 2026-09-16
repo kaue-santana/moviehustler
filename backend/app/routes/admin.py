@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+import math
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -12,24 +14,43 @@ from app.schemas.usuario import UsuarioOut
 from app.schemas.aluguel import VendaOut
 from app.schemas.devolucao import DevolucaoCreate, DevolucaoOut
 from app.schemas.relatorio import FaturamentoMensal, FilmeMaisAlugado, FaturamentoMedio
+from app.schemas.paginacao import Pagina
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/clientes/", response_model=list[UsuarioOut])
+def paginar(query, pagina: int, por_pagina: int) -> dict:
+    total = query.count()
+    itens = query.offset((pagina - 1) * por_pagina).limit(por_pagina).all()
+    return {
+        "itens": itens,
+        "total": total,
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total_paginas": max(1, math.ceil(total / por_pagina)),
+    }
+
+
+@router.get("/clientes/", response_model=Pagina[UsuarioOut])
 def listar_clientes(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     admin_atual: Usuario = Depends(get_admin_atual),
 ):
-    return db.query(Usuario).order_by(Usuario.nome).all()
+    query = db.query(Usuario).order_by(Usuario.nome)
+    return paginar(query, pagina, por_pagina)
 
 
-@router.get("/vendas/", response_model=list[VendaOut])
+@router.get("/vendas/", response_model=Pagina[VendaOut])
 def listar_vendas(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     admin_atual: Usuario = Depends(get_admin_atual),
 ):
-    return db.query(Aluguel).order_by(Aluguel.data_aluguel.desc()).all()
+    query = db.query(Aluguel).order_by(Aluguel.data_aluguel.desc())
+    return paginar(query, pagina, por_pagina)
 
 
 @router.get("/devolucoes/", response_model=list[DevolucaoOut])

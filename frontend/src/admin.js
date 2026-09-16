@@ -21,6 +21,8 @@ const abas = document.getElementById("admin-abas");
 const conteudo = document.getElementById("admin-conteudo");
 
 let abaAtual = "visao-geral";
+let paginaClientes = 1;
+let paginaVendas = 1;
 
 function mostrarLogin(mensagem) {
   painelAdmin.hidden = true;
@@ -67,6 +69,8 @@ abas.addEventListener("click", (evento) => {
   if (!botao) return;
 
   abaAtual = botao.dataset.aba;
+  paginaClientes = 1;
+  paginaVendas = 1;
   for (const item of abas.children) {
     item.classList.toggle("ativa", item === botao);
   }
@@ -90,6 +94,21 @@ async function renderizarAba(aba) {
 
 function formatarMes(dataIso) {
   return new Date(dataIso).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+function paginacaoHtml(pagina, totalPaginas, total) {
+  return `
+    <div class="admin-paginacao">
+      <button type="button" class="admin-botao-mini" id="pagina-anterior" ${pagina <= 1 ? "disabled" : ""}>Anterior</button>
+      <span>Página ${pagina} de ${totalPaginas} (${total} no total)</span>
+      <button type="button" class="admin-botao-mini" id="pagina-proxima" ${pagina >= totalPaginas ? "disabled" : ""}>Próxima</button>
+    </div>
+  `;
+}
+
+function ligarPaginacao(aoAnterior, aoProximo) {
+  document.getElementById("pagina-anterior").addEventListener("click", aoAnterior);
+  document.getElementById("pagina-proxima").addEventListener("click", aoProximo);
 }
 
 function corTema(variavel) {
@@ -235,10 +254,10 @@ async function renderizarVisaoGeral() {
 }
 
 async function renderizarClientes() {
-  const clientes = await buscarClientes();
+  const { itens: clientes, total, total_paginas: totalPaginas } = await buscarClientes(paginaClientes);
 
   conteudo.innerHTML = `
-    <h2 class="admin-secao-titulo">Clientes (${clientes.length})</h2>
+    <h2 class="admin-secao-titulo">Clientes (${total})</h2>
     <table class="admin-tabela">
       <thead><tr><th>Nome</th><th>E-mail</th><th>Admin</th></tr></thead>
       <tbody>
@@ -247,15 +266,30 @@ async function renderizarClientes() {
           .join("")}
       </tbody>
     </table>
+    ${paginacaoHtml(paginaClientes, totalPaginas, total)}
   `;
+
+  ligarPaginacao(
+    () => {
+      paginaClientes--;
+      renderizarClientes();
+    },
+    () => {
+      paginaClientes++;
+      renderizarClientes();
+    }
+  );
 }
 
 async function renderizarVendas() {
-  const [vendas, devolucoes] = await Promise.all([buscarVendas(), buscarDevolucoes()]);
+  const [{ itens: vendas, total, total_paginas: totalPaginas }, devolucoes] = await Promise.all([
+    buscarVendas(paginaVendas),
+    buscarDevolucoes(),
+  ]);
   const devolvidos = new Set(devolucoes.map((d) => d.aluguel.id));
 
   conteudo.innerHTML = `
-    <h2 class="admin-secao-titulo">Vendas (${vendas.length})</h2>
+    <h2 class="admin-secao-titulo">Vendas (${total})</h2>
     <table class="admin-tabela">
       <thead><tr><th>Filme</th><th>Cliente</th><th>Agência</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
       <tbody>
@@ -280,7 +314,19 @@ async function renderizarVendas() {
           .join("")}
       </tbody>
     </table>
+    ${paginacaoHtml(paginaVendas, totalPaginas, total)}
   `;
+
+  ligarPaginacao(
+    () => {
+      paginaVendas--;
+      renderizarVendas();
+    },
+    () => {
+      paginaVendas++;
+      renderizarVendas();
+    }
+  );
 
   for (const botao of conteudo.querySelectorAll("[data-aluguel]")) {
     botao.addEventListener("click", async () => {

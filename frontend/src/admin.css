@@ -216,6 +216,21 @@ body {
   border-bottom: none;
 }
 
+.admin-paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+}
+
+.admin-paginacao button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .admin-botao-mini {
   border: 1px solid var(--cor-acento);
   background: none;

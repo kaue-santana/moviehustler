@@ -12,8 +12,10 @@ async function requisicaoAdmin(caminho, opcoes = {}) {
   return resposta.json();
 }
 
-export const buscarClientes = () => requisicaoAdmin("/admin/clientes/");
-export const buscarVendas = () => requisicaoAdmin("/admin/vendas/");
+export const buscarClientes = (pagina = 1, porPagina = 10) =>
+  requisicaoAdmin(`/admin/clientes/?pagina=${pagina}&por_pagina=${porPagina}`);
+export const buscarVendas = (pagina = 1, porPagina = 10) =>
+  requisicaoAdmin(`/admin/vendas/?pagina=${pagina}&por_pagina=${porPagina}`);
 export const buscarDevolucoes = () => requisicaoAdmin("/admin/devolucoes/");
 
 export const registrarDevolucao = (aluguelId) =>
