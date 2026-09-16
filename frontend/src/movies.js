@@ -1,5 +1,5 @@
 import { URL_API } from "./config.js";
-import { obterToken } from "./auth.js";
+import { fetchAutenticado } from "./auth.js";
 
 export const CATEGORIAS = [
   "Ação",
@@ -31,14 +31,9 @@ export async function buscarAgencias() {
 }
 
 export async function criarAluguel(filmeId, agenciaId) {
-  const token = obterToken();
-
-  const resposta = await fetch(`${URL_API}/alugueis/`, {
+  const resposta = await fetchAutenticado(`${URL_API}/alugueis/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filme_id: filmeId, agencia_id: agenciaId }),
   });
 
@@ -50,11 +45,7 @@ export async function criarAluguel(filmeId, agenciaId) {
 }
 
 export async function buscarMeusAlugueis() {
-  const token = obterToken();
-
-  const resposta = await fetch(`${URL_API}/alugueis/`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const resposta = await fetchAutenticado(`${URL_API}/alugueis/`);
 
   if (!resposta.ok) {
     throw new Error(`Erro ao buscar pedidos: ${resposta.status}`);
@@ -64,12 +55,9 @@ export async function buscarMeusAlugueis() {
 }
 
 export async function criarFilme(dados) {
-  const resposta = await fetch(`${URL_API}/filmes/`, {
+  const resposta = await fetchAutenticado(`${URL_API}/filmes/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${obterToken()}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(dados),
   });
 
@@ -81,10 +69,24 @@ export async function criarFilme(dados) {
   return resposta.json();
 }
 
+export async function atualizarFilme(filmeId, dados) {
+  const resposta = await fetchAutenticado(`${URL_API}/filmes/${filmeId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dados),
+  });
+
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => ({}));
+    throw new Error(erro.detail || "Não foi possível atualizar o filme.");
+  }
+
+  return resposta.json();
+}
+
 export async function removerFilme(filmeId) {
-  const resposta = await fetch(`${URL_API}/filmes/${filmeId}`, {
+  const resposta = await fetchAutenticado(`${URL_API}/filmes/${filmeId}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${obterToken()}` },
   });
 
   if (!resposta.ok) {

@@ -1,5 +1,5 @@
 import { URL_API } from "./config.js";
-import { obterToken, estaLogado } from "./auth.js";
+import { estaLogado, fetchAutenticado } from "./auth.js";
 
 const CHAVE_FAVORITOS = "moviehustler_favoritos";
 
@@ -30,9 +30,7 @@ export async function carregarFavoritos() {
   }
 
   try {
-    const resposta = await fetch(`${URL_API}/favoritos/`, {
-      headers: { Authorization: `Bearer ${obterToken()}` },
-    });
+    const resposta = await fetchAutenticado(`${URL_API}/favoritos/`);
     if (!resposta.ok) throw new Error("Falha ao carregar favoritos da conta.");
     const lista = await resposta.json();
     favoritos = new Set(lista.map((item) => item.filme_id));
@@ -48,12 +46,9 @@ export async function sincronizarFavoritosAposLogin() {
 
   for (const filmeId of favoritosLocais) {
     try {
-      await fetch(`${URL_API}/favoritos/`, {
+      await fetchAutenticado(`${URL_API}/favoritos/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${obterToken()}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filme_id: filmeId }),
       });
     } catch (erro) {
@@ -85,18 +80,14 @@ export async function alternarFavorito(idFilme, aoMudar) {
 
   try {
     if (eraFavorito) {
-      const resposta = await fetch(`${URL_API}/favoritos/${idFilme}`, {
+      const resposta = await fetchAutenticado(`${URL_API}/favoritos/${idFilme}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${obterToken()}` },
       });
       if (!resposta.ok) throw new Error("Falha ao remover favorito.");
     } else {
-      const resposta = await fetch(`${URL_API}/favoritos/`, {
+      const resposta = await fetchAutenticado(`${URL_API}/favoritos/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${obterToken()}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filme_id: idFilme }),
       });
       if (!resposta.ok) throw new Error("Falha ao adicionar favorito.");

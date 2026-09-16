@@ -42,6 +42,25 @@ export function sair() {
   }
 }
 
+// Chamada autenticada centralizada: anexa o token e detecta sessão expirada
+// num só lugar, em vez de cada módulo montar o header Authorization sozinho.
+export async function fetchAutenticado(url, opcoes = {}) {
+  const resposta = await fetch(url, {
+    ...opcoes,
+    headers: {
+      ...(opcoes.headers || {}),
+      Authorization: `Bearer ${obterToken()}`,
+    },
+  });
+
+  if (resposta.status === 401) {
+    sair();
+    window.dispatchEvent(new Event("sessao-expirada"));
+  }
+
+  return resposta;
+}
+
 export async function registrar(nome, email, senha) {
   const resposta = await fetch(`${URL_API}/auth/registrar`, {
     method: "POST",

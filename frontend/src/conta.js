@@ -50,9 +50,16 @@ function atualizarMedidorSenha() {
 
 campoSenhaCadastro.addEventListener("input", atualizarMedidorSenha);
 
-export function abrirConta(aba = "login") {
+export function abrirConta(aba = "login", mensagem) {
   mostrarAba(aba);
   contaFundo.classList.add("aberto");
+
+  if (mensagem) {
+    loginMensagem.textContent = mensagem;
+    loginMensagem.hidden = false;
+  } else {
+    loginMensagem.hidden = true;
+  }
 }
 
 export function fecharConta() {

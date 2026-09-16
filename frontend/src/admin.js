@@ -1,6 +1,6 @@
 import { estaLogado, obterUsuario, login, sair } from "./auth.js";
 import { formatarPreco } from "./utilitarios.js";
-import { buscarFilmes, criarFilme, removerFilme } from "./movies.js";
+import { buscarFilmes, criarFilme, atualizarFilme, removerFilme } from "./movies.js";
 import {
   buscarClientes,
   buscarVendas,
@@ -210,6 +210,35 @@ async function renderizarVendas() {
   }
 }
 
+function preencherFormFilme(form, filme) {
+  form.elements.titulo.value = filme.titulo;
+  form.elements.generos.value = filme.generos.join(", ");
+  form.elements.ano.value = filme.ano;
+  form.elements.faixa.value = filme.faixa;
+  form.elements.duracao.value = filme.duracao;
+  form.elements.diretor.value = filme.diretor;
+  form.elements.sinopse.value = filme.sinopse;
+  form.elements.streamings.value = filme.streamings.join(", ");
+  form.elements.valor.value = filme.valor;
+}
+
+function entrarModoEdicao(form, filme) {
+  form.dataset.editando = filme.id;
+  preencherFormFilme(form, filme);
+  document.getElementById("form-filme-titulo").textContent = `Editando "${filme.titulo}"`;
+  document.getElementById("form-filme-enviar").textContent = "Salvar edição";
+  document.getElementById("form-filme-cancelar").hidden = false;
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function sairModoEdicao(form) {
+  delete form.dataset.editando;
+  form.reset();
+  document.getElementById("form-filme-titulo").textContent = "Adicionar filme";
+  document.getElementById("form-filme-enviar").textContent = "Adicionar filme";
+  document.getElementById("form-filme-cancelar").hidden = true;
+}
+
 async function renderizarProdutos() {
   const filmes = await buscarFilmes();
 
@@ -217,6 +246,7 @@ async function renderizarProdutos() {
     <h2 class="admin-secao-titulo">Produtos (${filmes.length})</h2>
 
     <form id="form-novo-filme" class="admin-form-filme">
+      <p class="admin-form-filme-titulo" id="form-filme-titulo">Adicionar filme</p>
       <input type="text" name="titulo" placeholder="Título" required />
       <input type="text" name="generos" placeholder="Gêneros (separados por vírgula)" required />
       <input type="number" name="ano" placeholder="Ano" required />
@@ -226,7 +256,10 @@ async function renderizarProdutos() {
       <input type="text" name="sinopse" placeholder="Sinopse" required />
       <input type="text" name="streamings" placeholder="Streamings (separados por vírgula)" required />
       <input type="number" step="0.01" name="valor" placeholder="Valor" required />
-      <button type="submit" class="botao-conta-enviar">Adicionar filme</button>
+      <div class="admin-form-filme-acoes">
+        <button type="submit" class="botao-conta-enviar" id="form-filme-enviar">Adicionar filme</button>
+        <button type="button" class="admin-botao-mini" id="form-filme-cancelar" hidden>Cancelar edição</button>
+      </div>
       <p class="mensagem-conta" id="mensagem-novo-filme" hidden></p>
     </form>
 
@@ -240,7 +273,10 @@ async function renderizarProdutos() {
             <td>${filme.titulo}</td>
             <td>${filme.ano}</td>
             <td>${formatarPreco(filme.valor)}</td>
-            <td><button type="button" class="admin-botao-mini admin-botao-perigo" data-remover="${filme.id}">Remover</button></td>
+            <td>
+              <button type="button" class="admin-botao-mini" data-editar="${filme.id}">Editar</button>
+              <button type="button" class="admin-botao-mini admin-botao-perigo" data-remover="${filme.id}">Remover</button>
+            </td>
           </tr>`
           )
           .join("")}
@@ -255,33 +291,47 @@ async function renderizarProdutos() {
     evento.preventDefault();
     mensagem.hidden = true;
     const dados = new FormData(form);
+    const filmeEditado = {
+      titulo: dados.get("titulo"),
+      generos: dados
+        .get("generos")
+        .split(",")
+        .map((g) => g.trim())
+        .filter(Boolean),
+      ano: Number(dados.get("ano")),
+      faixa: dados.get("faixa"),
+      duracao: dados.get("duracao"),
+      diretor: dados.get("diretor"),
+      sinopse: dados.get("sinopse"),
+      streamings: dados
+        .get("streamings")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      valor: Number(dados.get("valor")),
+    };
 
     try {
-      await criarFilme({
-        titulo: dados.get("titulo"),
-        generos: dados
-          .get("generos")
-          .split(",")
-          .map((g) => g.trim())
-          .filter(Boolean),
-        ano: Number(dados.get("ano")),
-        faixa: dados.get("faixa"),
-        duracao: dados.get("duracao"),
-        diretor: dados.get("diretor"),
-        sinopse: dados.get("sinopse"),
-        streamings: dados
-          .get("streamings")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        valor: Number(dados.get("valor")),
-      });
+      if (form.dataset.editando) {
+        await atualizarFilme(Number(form.dataset.editando), filmeEditado);
+      } else {
+        await criarFilme(filmeEditado);
+      }
       renderizarProdutos();
     } catch (erro) {
       mensagem.textContent = erro.message;
       mensagem.hidden = false;
     }
   });
+
+  document.getElementById("form-filme-cancelar").addEventListener("click", () => sairModoEdicao(form));
+
+  for (const botao of conteudo.querySelectorAll("[data-editar]")) {
+    botao.addEventListener("click", () => {
+      const filme = filmes.find((f) => f.id === Number(botao.dataset.editar));
+      entrarModoEdicao(form, filme);
+    });
+  }
 
   for (const botao of conteudo.querySelectorAll("[data-remover]")) {
     botao.addEventListener("click", async () => {
@@ -323,6 +373,10 @@ async function renderizarDevolucoes() {
     }
   `;
 }
+
+window.addEventListener("sessao-expirada", () => {
+  mostrarLogin("Sua sessão expirou. Faça login novamente.");
+});
 
 if (estaLogado() && obterUsuario()?.is_admin) {
   mostrarPainel();

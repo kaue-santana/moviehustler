@@ -204,6 +204,14 @@ async function aoAutenticar() {
   atualizarCardsFavoritos();
 }
 
+window.addEventListener("sessao-expirada", () => {
+  fecharMenu();
+  fecharPainel();
+  atualizarAreaConta();
+  atualizarCardsFavoritos();
+  abrirConta("login", "Sua sessão expirou. Faça login novamente.");
+});
+
 export function iniciarPerfil() {
   atualizarAreaConta();
   iniciarConta(aoAutenticar);

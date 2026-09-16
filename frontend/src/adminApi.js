@@ -1,14 +1,8 @@
 import { URL_API } from "./config.js";
-import { obterToken } from "./auth.js";
+import { fetchAutenticado } from "./auth.js";
 
 async function requisicaoAdmin(caminho, opcoes = {}) {
-  const resposta = await fetch(`${URL_API}${caminho}`, {
-    ...opcoes,
-    headers: {
-      ...(opcoes.headers || {}),
-      Authorization: `Bearer ${obterToken()}`,
-    },
-  });
+  const resposta = await fetchAutenticado(`${URL_API}${caminho}`, opcoes);
 
   if (!resposta.ok) {
     const erro = await resposta.json().catch(() => ({}));
