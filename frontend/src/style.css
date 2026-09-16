@@ -487,6 +487,45 @@ body {
   filter: brightness(0.96);
 }
 
+.gate-caixa {
+  text-align: center;
+}
+
+.gate-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.gate-botao-secundario {
+  background: none;
+  border: 1.5px solid var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+.gate-botao-secundario:hover {
+  filter: none;
+  border-color: var(--cor-acento);
+}
+
+.gate-continuar {
+  display: block;
+  width: 100%;
+  margin-top: 1.1rem;
+  background: none;
+  border: none;
+  padding: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gate-continuar:hover {
+  color: var(--cor-acento);
+}
+
 .mensagem-conta {
   margin: 0.7rem 0 0;
   font-size: 0.82rem;
