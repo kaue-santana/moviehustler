@@ -216,6 +216,25 @@ body {
   border-bottom: none;
 }
 
+.admin-busca {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.admin-busca:focus {
+  outline: none;
+  border-color: var(--cor-acento);
+}
+
 .admin-paginacao {
   display: flex;
   align-items: center;

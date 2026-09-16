@@ -1,7 +1,7 @@
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -33,23 +33,36 @@ def paginar(query, pagina: int, por_pagina: int) -> dict:
 
 @router.get("/clientes/", response_model=Pagina[UsuarioOut])
 def listar_clientes(
+    busca: str | None = None,
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     admin_atual: Usuario = Depends(get_admin_atual),
 ):
     query = db.query(Usuario).order_by(Usuario.nome)
+    if busca:
+        termo = f"%{busca}%"
+        query = query.filter(or_(Usuario.nome.ilike(termo), Usuario.email.ilike(termo)))
     return paginar(query, pagina, por_pagina)
 
 
 @router.get("/vendas/", response_model=Pagina[VendaOut])
 def listar_vendas(
+    busca: str | None = None,
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     admin_atual: Usuario = Depends(get_admin_atual),
 ):
-    query = db.query(Aluguel).order_by(Aluguel.data_aluguel.desc())
+    query = (
+        db.query(Aluguel)
+        .join(Filme, Aluguel.filme_id == Filme.id)
+        .join(Usuario, Aluguel.usuario_id == Usuario.id)
+        .order_by(Aluguel.data_aluguel.desc())
+    )
+    if busca:
+        termo = f"%{busca}%"
+        query = query.filter(or_(Filme.titulo.ilike(termo), Usuario.nome.ilike(termo)))
     return paginar(query, pagina, por_pagina)
 
 

@@ -23,6 +23,16 @@ const conteudo = document.getElementById("admin-conteudo");
 let abaAtual = "visao-geral";
 let paginaClientes = 1;
 let paginaVendas = 1;
+let buscaClientes = "";
+let buscaVendas = "";
+
+function debounce(fn, atraso) {
+  let temporizador;
+  return (...args) => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => fn(...args), atraso);
+  };
+}
 
 function mostrarLogin(mensagem) {
   painelAdmin.hidden = true;
@@ -71,6 +81,8 @@ abas.addEventListener("click", (evento) => {
   abaAtual = botao.dataset.aba;
   paginaClientes = 1;
   paginaVendas = 1;
+  buscaClientes = "";
+  buscaVendas = "";
   for (const item of abas.children) {
     item.classList.toggle("ativa", item === botao);
   }
@@ -94,6 +106,26 @@ async function renderizarAba(aba) {
 
 function formatarMes(dataIso) {
   return new Date(dataIso).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+function buscaHtml(id, valorAtual, placeholder) {
+  return `<input type="search" id="${id}" class="admin-busca" placeholder="${placeholder}" value="${valorAtual}" />`;
+}
+
+function ligarBusca(id, aoBuscar) {
+  document.getElementById(id).addEventListener(
+    "input",
+    debounce(async (evento) => {
+      const valor = evento.target.value;
+      await aoBuscar(valor);
+      // o re-render recria o campo do zero — sem isso, o foco (e o cursor) se perdem a cada busca
+      const campo = document.getElementById(id);
+      if (campo) {
+        campo.focus();
+        campo.setSelectionRange(campo.value.length, campo.value.length);
+      }
+    }, 350)
+  );
 }
 
 function paginacaoHtml(pagina, totalPaginas, total) {
@@ -254,79 +286,109 @@ async function renderizarVisaoGeral() {
 }
 
 async function renderizarClientes() {
-  const { itens: clientes, total, total_paginas: totalPaginas } = await buscarClientes(paginaClientes);
+  const {
+    itens: clientes,
+    total,
+    total_paginas: totalPaginas,
+  } = await buscarClientes(paginaClientes, 10, buscaClientes);
 
   conteudo.innerHTML = `
     <h2 class="admin-secao-titulo">Clientes (${total})</h2>
-    <table class="admin-tabela">
-      <thead><tr><th>Nome</th><th>E-mail</th><th>Admin</th></tr></thead>
-      <tbody>
-        ${clientes
-          .map((c) => `<tr><td>${c.nome}</td><td>${c.email}</td><td>${c.is_admin ? "Sim" : "—"}</td></tr>`)
-          .join("")}
-      </tbody>
-    </table>
-    ${paginacaoHtml(paginaClientes, totalPaginas, total)}
+    ${buscaHtml("busca-clientes", buscaClientes, "Buscar por nome ou e-mail...")}
+    ${
+      clientes.length === 0
+        ? '<p class="admin-vazio">Nenhum cliente encontrado.</p>'
+        : `<table class="admin-tabela">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Admin</th></tr></thead>
+            <tbody>
+              ${clientes
+                .map((c) => `<tr><td>${c.nome}</td><td>${c.email}</td><td>${c.is_admin ? "Sim" : "—"}</td></tr>`)
+                .join("")}
+            </tbody>
+          </table>
+          ${paginacaoHtml(paginaClientes, totalPaginas, total)}`
+    }
   `;
 
-  ligarPaginacao(
-    () => {
-      paginaClientes--;
-      renderizarClientes();
-    },
-    () => {
-      paginaClientes++;
-      renderizarClientes();
-    }
-  );
+  ligarBusca("busca-clientes", async (valor) => {
+    buscaClientes = valor;
+    paginaClientes = 1;
+    await renderizarClientes();
+  });
+
+  if (clientes.length > 0) {
+    ligarPaginacao(
+      () => {
+        paginaClientes--;
+        renderizarClientes();
+      },
+      () => {
+        paginaClientes++;
+        renderizarClientes();
+      }
+    );
+  }
 }
 
 async function renderizarVendas() {
   const [{ itens: vendas, total, total_paginas: totalPaginas }, devolucoes] = await Promise.all([
-    buscarVendas(paginaVendas),
+    buscarVendas(paginaVendas, 10, buscaVendas),
     buscarDevolucoes(),
   ]);
   const devolvidos = new Set(devolucoes.map((d) => d.aluguel.id));
 
   conteudo.innerHTML = `
     <h2 class="admin-secao-titulo">Vendas (${total})</h2>
-    <table class="admin-tabela">
-      <thead><tr><th>Filme</th><th>Cliente</th><th>Agência</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        ${vendas
-          .map((venda) => {
-            const devolvido = devolvidos.has(venda.id);
-            return `
-              <tr>
-                <td>${venda.filme.titulo}</td>
-                <td>${venda.usuario.nome}</td>
-                <td>${venda.agencia.nome}</td>
-                <td>${new Date(venda.data_aluguel).toLocaleDateString("pt-BR")}</td>
-                <td>${formatarPreco(venda.filme.valor)}</td>
-                <td>${devolvido ? "Devolvido" : "Em posse do cliente"}</td>
-                <td>${
-                  devolvido
-                    ? ""
-                    : `<button type="button" class="admin-botao-mini" data-aluguel="${venda.id}">Marcar devolução</button>`
-                }</td>
-              </tr>`;
-          })
-          .join("")}
-      </tbody>
-    </table>
-    ${paginacaoHtml(paginaVendas, totalPaginas, total)}
+    ${buscaHtml("busca-vendas", buscaVendas, "Buscar por filme ou cliente...")}
+    ${
+      vendas.length === 0
+        ? '<p class="admin-vazio">Nenhuma venda encontrada.</p>'
+        : `<table class="admin-tabela">
+            <thead><tr><th>Filme</th><th>Cliente</th><th>Agência</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${vendas
+                .map((venda) => {
+                  const devolvido = devolvidos.has(venda.id);
+                  return `
+                    <tr>
+                      <td>${venda.filme.titulo}</td>
+                      <td>${venda.usuario.nome}</td>
+                      <td>${venda.agencia.nome}</td>
+                      <td>${new Date(venda.data_aluguel).toLocaleDateString("pt-BR")}</td>
+                      <td>${formatarPreco(venda.filme.valor)}</td>
+                      <td>${devolvido ? "Devolvido" : "Em posse do cliente"}</td>
+                      <td>${
+                        devolvido
+                          ? ""
+                          : `<button type="button" class="admin-botao-mini" data-aluguel="${venda.id}">Marcar devolução</button>`
+                      }</td>
+                    </tr>`;
+                })
+                .join("")}
+            </tbody>
+          </table>
+          ${paginacaoHtml(paginaVendas, totalPaginas, total)}`
+    }
   `;
 
-  ligarPaginacao(
-    () => {
-      paginaVendas--;
-      renderizarVendas();
-    },
-    () => {
-      paginaVendas++;
-      renderizarVendas();
-    }
-  );
+  ligarBusca("busca-vendas", async (valor) => {
+    buscaVendas = valor;
+    paginaVendas = 1;
+    await renderizarVendas();
+  });
+
+  if (vendas.length > 0) {
+    ligarPaginacao(
+      () => {
+        paginaVendas--;
+        renderizarVendas();
+      },
+      () => {
+        paginaVendas++;
+        renderizarVendas();
+      }
+    );
+  }
 
   for (const botao of conteudo.querySelectorAll("[data-aluguel]")) {
     botao.addEventListener("click", async () => {
