@@ -1,4 +1,4 @@
-import { estaLogado, obterUsuario, sair } from "./auth.js";
+import { estaLogado, obterUsuario, sair, atualizarConta } from "./auth.js";
 import { abrirConta, iniciarConta } from "./conta.js";
 import { obterFilmesFavoritos, criarCardFilme, atualizarCardsFavoritos } from "./catalogo.js";
 import { carregarFavoritos, sincronizarFavoritosAposLogin } from "./favoritos.js";
@@ -119,6 +119,7 @@ function renderizarFavoritos() {
 
 function renderizarConfiguracoes() {
   const temaAtual = obterTema();
+  const usuario = obterUsuario();
   const opcoes = [
     { valor: "claro", rotulo: "Claro" },
     { valor: "escuro", rotulo: "Escuro" },
@@ -139,11 +140,56 @@ function renderizarConfiguracoes() {
         )
         .join("")}
     </div>
-    <p class="config-em-breve">Mais configurações da conta chegam em breve.</p>
+
+    <p class="config-secao-titulo">Dados da conta</p>
+    <form id="form-editar-conta">
+      <div class="campo-conta">
+        <label for="config-nome">Nome</label>
+        <input type="text" id="config-nome" value="${usuario?.nome ?? ""}" required />
+      </div>
+      <div class="campo-conta">
+        <label for="config-email">E-mail</label>
+        <input type="email" id="config-email" value="${usuario?.email ?? ""}" required />
+      </div>
+      <div class="campo-conta">
+        <label for="config-senha">Nova senha</label>
+        <input type="password" id="config-senha" placeholder="Deixe em branco pra manter a atual" minlength="6" />
+      </div>
+      <button type="submit" class="botao-conta-enviar">Salvar alterações</button>
+      <p class="mensagem-conta" id="config-conta-mensagem" hidden></p>
+    </form>
   `;
 
   document.getElementById("config-tema").addEventListener("change", (evento) => {
     definirTema(evento.target.value);
+  });
+
+  const formEditarConta = document.getElementById("form-editar-conta");
+  const mensagemConta = document.getElementById("config-conta-mensagem");
+
+  formEditarConta.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    mensagemConta.hidden = true;
+
+    const senha = document.getElementById("config-senha").value;
+    const dados = {
+      nome: document.getElementById("config-nome").value,
+      email: document.getElementById("config-email").value,
+    };
+    if (senha) dados.senha = senha;
+
+    try {
+      await atualizarConta(dados);
+      atualizarAreaConta();
+      document.getElementById("config-senha").value = "";
+      mensagemConta.textContent = "Dados atualizados com sucesso!";
+      mensagemConta.className = "mensagem-conta mensagem-conta-sucesso";
+      mensagemConta.hidden = false;
+    } catch (erro) {
+      mensagemConta.textContent = erro.message;
+      mensagemConta.className = "mensagem-conta";
+      mensagemConta.hidden = false;
+    }
   });
 }
 

@@ -92,6 +92,83 @@ function formatarMes(dataIso) {
   return new Date(dataIso).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
 
+function corTema(variavel) {
+  return getComputedStyle(document.documentElement).getPropertyValue(variavel).trim();
+}
+
+let graficoFaturamento = null;
+let graficoMaisAlugados = null;
+
+function desenharGraficoFaturamento(faturamentoMensal) {
+  if (graficoFaturamento) graficoFaturamento.destroy();
+
+  const corTexto = corTema("--cor-texto-suave");
+  const corGrade = corTema("--cor-borda");
+
+  graficoFaturamento = new Chart(document.getElementById("grafico-faturamento"), {
+    type: "line",
+    data: {
+      labels: faturamentoMensal.map((item) => formatarMes(item.mes)),
+      datasets: [
+        {
+          label: "Faturamento",
+          data: faturamentoMensal.map((item) => item.faturamento),
+          borderColor: corTema("--cor-acento"),
+          backgroundColor: corTema("--cor-acento-suave"),
+          fill: true,
+          tension: 0.25,
+          pointRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: corTexto }, grid: { color: corGrade } },
+        y: {
+          ticks: { color: corTexto, callback: (valor) => formatarPreco(valor) },
+          grid: { color: corGrade },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+function desenharGraficoMaisAlugados(maisAlugados) {
+  if (graficoMaisAlugados) graficoMaisAlugados.destroy();
+
+  const corTexto = corTema("--cor-texto-suave");
+  const corGrade = corTema("--cor-borda");
+
+  graficoMaisAlugados = new Chart(document.getElementById("grafico-mais-alugados"), {
+    type: "bar",
+    data: {
+      labels: maisAlugados.map((item) => item.titulo),
+      datasets: [
+        {
+          label: "Aluguéis",
+          data: maisAlugados.map((item) => item.total_alugueis),
+          backgroundColor: corTema("--azul-blockbuster"),
+          borderRadius: 6,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: corTexto, precision: 0 }, grid: { color: corGrade }, beginAtZero: true },
+        y: { ticks: { color: corTexto }, grid: { display: false } },
+      },
+    },
+  });
+}
+
 async function renderizarVisaoGeral() {
   const [faturamentoMedio, faturamentoMensal, maisAlugados] = await Promise.all([
     buscarFaturamentoMedio(),
@@ -115,7 +192,8 @@ async function renderizarVisaoGeral() {
     ${
       faturamentoMensal.length === 0
         ? '<p class="admin-vazio">Nenhum aluguel registrado ainda.</p>'
-        : `<table class="admin-tabela">
+        : `<div class="admin-grafico-caixa"><canvas id="grafico-faturamento"></canvas></div>
+          <table class="admin-tabela">
             <thead><tr><th>Mês</th><th>Aluguéis</th><th>Faturamento</th></tr></thead>
             <tbody>
               ${faturamentoMensal
@@ -136,7 +214,8 @@ async function renderizarVisaoGeral() {
     ${
       maisAlugados.length === 0
         ? '<p class="admin-vazio">Nenhum aluguel registrado ainda.</p>'
-        : `<table class="admin-tabela">
+        : `<div class="admin-grafico-caixa"><canvas id="grafico-mais-alugados"></canvas></div>
+          <table class="admin-tabela">
             <thead><tr><th>Filme</th><th>Total de aluguéis</th></tr></thead>
             <tbody>
               ${maisAlugados
@@ -146,6 +225,13 @@ async function renderizarVisaoGeral() {
           </table>`
     }
   `;
+
+  if (faturamentoMensal.length > 0) {
+    desenharGraficoFaturamento(faturamentoMensal);
+  }
+  if (maisAlugados.length > 0) {
+    desenharGraficoMaisAlugados(maisAlugados);
+  }
 }
 
 async function renderizarClientes() {

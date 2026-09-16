@@ -1,4 +1,4 @@
-import { buscarAgencias, criarAluguel } from "./movies.js";
+import { buscarAgencias } from "./movies.js";
 import { formatarPreco } from "./utilitarios.js";
 import { adicionarAoCarrinho } from "./carrinho.js";
 import { estaLogado } from "./auth.js";
@@ -57,7 +57,7 @@ export function abrirModal(filme) {
   modalFundo.classList.add("aberto");
 }
 
-async function confirmarAluguel(filme) {
+function confirmarAluguel(filme) {
   if (!estaLogado()) {
     fecharModal();
     abrirConta();
@@ -66,26 +66,12 @@ async function confirmarAluguel(filme) {
 
   const agenciaEscolhida = agencias.find((a) => a.id === Number(selectAgencia.value));
 
-  selectAgencia.disabled = true;
-  botaoAlugar.disabled = true;
-  botaoAlugar.textContent = "Registrando...";
-
-  try {
-    await criarAluguel(filme.id, agenciaEscolhida.id);
-  } catch (erro) {
-    console.error(erro);
-    selectAgencia.disabled = false;
-    botaoAlugar.disabled = false;
-    botaoAlugar.textContent = "Alugar agora";
-    mensagemAluguel.textContent = "Não foi possível registrar o aluguel. Tente novamente.";
-    mensagemAluguel.hidden = false;
-    return;
-  }
-
   adicionarAoCarrinho(filme, agenciaEscolhida);
 
+  selectAgencia.disabled = true;
+  botaoAlugar.disabled = true;
   botaoAlugar.textContent = "Adicionado ao carrinho ✓";
-  mensagemAluguel.textContent = `"${filme.titulo}" adicionado ao carrinho! Retirada em ${agenciaEscolhida.nome} (${agenciaEscolhida.bairro}).`;
+  mensagemAluguel.textContent = `"${filme.titulo}" adicionado ao carrinho! Retirada em ${agenciaEscolhida.nome} (${agenciaEscolhida.bairro}). O aluguel só é confirmado ao finalizar no carrinho.`;
   mensagemAluguel.hidden = false;
 }
 

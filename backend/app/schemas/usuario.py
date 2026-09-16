@@ -7,6 +7,12 @@ class UsuarioCreate(BaseModel):
     senha: str
 
 
+class UsuarioAtualizar(BaseModel):
+    nome: str
+    email: EmailStr
+    senha: str | None = None
+
+
 class UsuarioOut(BaseModel):
     id: int
     nome: str

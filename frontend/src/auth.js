@@ -33,6 +33,14 @@ function salvarSessao(token, usuario) {
   }
 }
 
+function atualizarUsuarioSalvo(usuario) {
+  try {
+    localStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
+  } catch (erro) {
+    console.warn("Não foi possível salvar os dados atualizados da conta.", erro);
+  }
+}
+
 export function sair() {
   try {
     localStorage.removeItem(CHAVE_TOKEN);
@@ -104,5 +112,22 @@ export async function login(email, senha) {
 
   const usuario = await respostaUsuario.json();
   salvarSessao(token, usuario);
+  return usuario;
+}
+
+export async function atualizarConta(dados) {
+  const resposta = await fetchAutenticado(`${URL_API}/auth/me`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dados),
+  });
+
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => ({}));
+    throw new Error(erro.detail || "Não foi possível atualizar seus dados.");
+  }
+
+  const usuario = await resposta.json();
+  atualizarUsuarioSalvo(usuario);
   return usuario;
 }

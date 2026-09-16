@@ -1,4 +1,5 @@
 import { formatarPreco } from "./utilitarios.js";
+import { criarAluguel } from "./movies.js";
 
 const CHAVE_CARRINHO = "moviehustler_carrinho";
 
@@ -12,6 +13,7 @@ const carrinhoLista = document.getElementById("carrinho-lista");
 const carrinhoTotal = document.getElementById("carrinho-total");
 const carrinhoFechar = document.getElementById("carrinho-fechar");
 const botaoFinalizar = document.getElementById("botao-finalizar");
+const mensagemCarrinho = document.getElementById("mensagem-carrinho");
 
 function salvarCarrinho() {
   try {
@@ -39,8 +41,10 @@ function carregarCarrinhoSalvo() {
 export function adicionarAoCarrinho(filme, agencia) {
   carrinho.push({
     idCarrinho: proximoIdCarrinho++,
+    filmeId: filme.id,
     titulo: filme.titulo,
     valor: filme.valor,
+    agenciaId: agencia.id,
     agenciaNome: agencia.nome,
     agenciaBairro: agencia.bairro,
   });
@@ -121,13 +125,40 @@ carrinhoFundo.addEventListener("click", (evento) => {
   }
 });
 
-botaoFinalizar.addEventListener("click", () => {
-  carrinho = [];
+botaoFinalizar.addEventListener("click", async () => {
+  botaoFinalizar.disabled = true;
+  botaoFinalizar.textContent = "Finalizando...";
+  mensagemCarrinho.hidden = true;
+
+  const falharam = [];
+
+  for (const item of carrinho) {
+    try {
+      await criarAluguel(item.filmeId, item.agenciaId);
+    } catch (erro) {
+      console.error(erro);
+      falharam.push(item);
+    }
+  }
+
+  carrinho = falharam;
   atualizarContadorCarrinho();
   renderizarCarrinho();
   salvarCarrinho();
-  fecharCarrinho();
-  alert("Aluguel finalizado! Seus filmes vão te esperar nas agências escolhidas.");
+  botaoFinalizar.textContent = "Finalizar aluguel";
+
+  if (falharam.length === 0) {
+    fecharCarrinho();
+    alert("Aluguel finalizado! Seus filmes vão te esperar nas agências escolhidas.");
+    return;
+  }
+
+  botaoFinalizar.disabled = false;
+  const plural = falharam.length > 1;
+  mensagemCarrinho.textContent = `Não foi possível registrar ${falharam.length} ite${plural ? "ns" : "m"} (${falharam
+    .map((item) => item.titulo)
+    .join(", ")}). Os outros foram alugados normalmente — tente de novo pro que sobrou.`;
+  mensagemCarrinho.hidden = false;
 });
 
 export function iniciarCarrinho() {

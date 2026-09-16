@@ -495,6 +495,10 @@ body {
   text-align: center;
 }
 
+.mensagem-conta-sucesso {
+  color: var(--cor-sucesso);
+}
+
 /* ---------- painel de perfil / pedidos / configurações ---------- */
 
 .painel-caixa {
@@ -608,12 +612,6 @@ body {
   height: 16px;
 }
 
-.config-em-breve {
-  margin-top: 1.5rem;
-  font-size: 0.8rem;
-  color: var(--cor-texto-suave);
-  font-style: italic;
-}
 
 /* ---------- painel do carrinho ---------- */
 
@@ -1142,6 +1140,13 @@ body {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--cor-sucesso);
+}
+
+.mensagem-carrinho {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--cor-perigo);
 }
 
 /* ---------- responsivo ---------- */
