@@ -13,6 +13,8 @@ const medidorSenha = document.getElementById("medidor-senha");
 const medidorPreenchimento = document.getElementById("medidor-senha-preenchimento");
 const medidorTexto = document.getElementById("medidor-senha-texto");
 
+// Callback plugado de fora (ver iniciarConta) pra evitar import circular:
+// conta.js não precisa saber quem reage ao login, só avisa que aconteceu.
 let aoAutenticar = () => {};
 
 const NIVEIS_FORCA = [
@@ -23,6 +25,9 @@ const NIVEIS_FORCA = [
   { rotulo: "Muito forte", classe: "nivel-5" },
 ];
 
+// Medidor de força só visual/local — não bloqueia o cadastro, é feedback
+// pro usuário. A validação de verdade (senha mínima etc) é só o que o
+// backend exigir; não há nenhuma regra de senha forçada aqui.
 function avaliarForcaSenha(senha) {
   let pontos = 0;
   if (senha.length >= 6) pontos++;
@@ -112,6 +117,9 @@ formCadastro.addEventListener("submit", async (evento) => {
   cadastroMensagem.hidden = true;
 
   try {
+    // O backend não loga automaticamente ao registrar — são dois endpoints
+    // separados, então o frontend chama login() logo em seguida pra já
+    // deixar a pessoa autenticada sem precisar digitar tudo de novo.
     await registrar(nome, email, senha);
     await login(email, senha);
     fecharConta();
@@ -124,6 +132,8 @@ formCadastro.addEventListener("submit", async (evento) => {
   }
 });
 
+// Quem monta a tela (app.js) chama isso passando o que deve acontecer
+// depois de um login/cadastro bem-sucedido (recarregar catálogo, favoritos etc).
 export function iniciarConta(callbackAoAutenticar) {
   aoAutenticar = callbackAoAutenticar;
 }

@@ -1,14 +1,20 @@
+// Modal de detalhes do filme, aberto ao clicar num card do catálogo —
+// mostra sinopse/streamings/preço e é daqui que o filme entra no carrinho.
 import { buscarAgencias } from "./movies.js";
 import { formatarPreco } from "./utilitarios.js";
 import { adicionarAoCarrinho } from "./carrinho.js";
 import { estaLogado } from "./auth.js";
 import { abrirConta } from "./conta.js";
 
+// Carregada uma vez em iniciarModal() e reaproveitada — a lista de agências
+// não muda durante a sessão, não precisa buscar de novo a cada modal aberto.
 let agencias = [];
 
 const modalFundo = document.getElementById("modal-fundo");
 const modalPoster = document.getElementById("modal-poster");
 const modalTitulo = document.getElementById("modal-titulo");
+const modalLogoFilme = document.getElementById("modal-logo-filme");
+const modalTituloTexto = document.getElementById("modal-titulo-texto");
 const modalDuracao = document.getElementById("modal-duracao");
 const modalDiretor = document.getElementById("modal-diretor");
 const modalGenero = document.getElementById("modal-genero");
@@ -21,8 +27,25 @@ const botaoAlugar = document.getElementById("botao-alugar");
 const mensagemAluguel = document.getElementById("mensagem-aluguel");
 
 export function abrirModal(filme) {
-  modalPoster.textContent = filme.titulo;
-  modalTitulo.textContent = filme.titulo;
+  if (filme.poster_url) {
+    modalPoster.textContent = "";
+    modalPoster.classList.add("modal-poster-com-imagem");
+    modalPoster.style.backgroundImage = `url('${filme.poster_url}')`;
+  } else {
+    modalPoster.textContent = filme.titulo;
+    modalPoster.classList.remove("modal-poster-com-imagem");
+    modalPoster.style.backgroundImage = "";
+  }
+  if (filme.logo_url) {
+    modalLogoFilme.src = filme.logo_url;
+    modalLogoFilme.alt = filme.titulo;
+    modalLogoFilme.hidden = false;
+    modalTituloTexto.hidden = true;
+  } else {
+    modalLogoFilme.hidden = true;
+    modalTituloTexto.hidden = false;
+  }
+  modalTituloTexto.textContent = filme.titulo;
   modalDuracao.textContent = `Duração: ${filme.duracao}`;
   modalDiretor.textContent = `Direção: ${filme.diretor}`;
   const rotuloGenero = filme.generos.length > 1 ? "Gêneros" : "Gênero";
@@ -58,6 +81,8 @@ export function abrirModal(filme) {
 }
 
 function confirmarAluguel(filme) {
+  // Se tentar alugar sem estar logado, manda direto pro modal de conta em
+  // vez de mostrar um erro — a intenção do clique já era alugar mesmo.
   if (!estaLogado()) {
     fecharModal();
     abrirConta();
@@ -66,6 +91,10 @@ function confirmarAluguel(filme) {
 
   const agenciaEscolhida = agencias.find((a) => a.id === Number(selectAgencia.value));
 
+  // NOTA: apesar do nome do botão dizer "Alugar agora", isso só adiciona ao
+  // carrinho — o Aluguel de verdade só é criado no backend quando o cliente
+  // finalizar o carrinho (ver mensagemAluguel.textContent abaixo, que deixa
+  // isso explícito pro usuário).
   adicionarAoCarrinho(filme, agenciaEscolhida);
 
   selectAgencia.disabled = true;

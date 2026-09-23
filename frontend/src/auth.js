@@ -1,3 +1,6 @@
+// Sessão do usuário no frontend: token JWT + dados básicos guardados no
+// localStorage (sem cookies/sessão de servidor — é o backend stateless
+// que valida o token a cada request, ver app/dependencies.py).
 import { URL_API } from "./config.js";
 
 const CHAVE_TOKEN = "moviehustler_token";
@@ -62,6 +65,9 @@ export async function fetchAutenticado(url, opcoes = {}) {
   });
 
   if (resposta.status === 401) {
+    // Qualquer 401 aqui significa "token inválido ou expirado" — desloga
+    // e dispara um evento global; quem estiver ouvindo (ver o listener em
+    // perfil.js) mostra o aviso de sessão expirada e volta pra tela de login.
     sair();
     window.dispatchEvent(new Event("sessao-expirada"));
   }
@@ -85,6 +91,9 @@ export async function registrar(nome, email, senha) {
 }
 
 export async function login(email, senha) {
+  // O backend usa OAuth2PasswordRequestForm (padrão FastAPI), que espera
+  // form-urlencoded com campos "username"/"password" — não JSON, por isso
+  // URLSearchParams em vez de JSON.stringify aqui (diferente de registrar()).
   const corpo = new URLSearchParams();
   corpo.set("username", email);
   corpo.set("password", senha);
@@ -102,6 +111,9 @@ export async function login(email, senha) {
 
   const { access_token: token } = await resposta.json();
 
+  // O /login só devolve o token — precisa de uma segunda chamada pra pegar
+  // nome/email/is_admin do usuário logado, já que o frontend guarda os dois
+  // juntos (ver salvarSessao) pra não precisar consultar /auth/me toda hora.
   const respostaUsuario = await fetch(`${URL_API}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });

@@ -1,3 +1,6 @@
+// Camada fina sobre fetchAutenticado especificamente pras rotas /admin/* —
+// centraliza o tratamento de erro (rejeita com uma mensagem legível em vez
+// de cada tela do admin repetir o mesmo try/catch de parse de JSON).
 import { URL_API } from "./config.js";
 import { fetchAutenticado } from "./auth.js";
 
@@ -5,6 +8,9 @@ async function requisicaoAdmin(caminho, opcoes = {}) {
   const resposta = await fetchAutenticado(`${URL_API}${caminho}`, opcoes);
 
   if (!resposta.ok) {
+    // .catch(() => ({})) cobre o caso de o corpo do erro não ser JSON
+    // válido (ex: erro 500 cru do servidor) — sem isso, o .json() lançaria
+    // uma segunda exceção e mascararia o erro original.
     const erro = await resposta.json().catch(() => ({}));
     throw new Error(erro.detail || `Erro ${resposta.status}`);
   }

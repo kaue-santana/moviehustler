@@ -16,6 +16,9 @@ def listar_favoritos(
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_usuario_atual),
 ):
+    # Depends(get_usuario_atual) aqui faz duas coisas de uma vez: exige que a
+    # requisição tenha um token válido (senão 401 antes mesmo de entrar na
+    # função) e já entrega o Usuario correspondente pronto pra usar.
     return db.query(Favorito).filter(Favorito.usuario_id == usuario_atual.id).all()
 
 
@@ -38,6 +41,9 @@ def adicionar_favorito(
         .first()
     )
     if existente:
+        # Idempotente de propósito: favoritar um filme já favoritado não dá
+        # erro, só devolve o favorito existente — evita duplicata mesmo que
+        # o UniqueConstraint do banco também protegesse contra isso.
         return existente
 
     novo_favorito = Favorito(usuario_id=usuario_atual.id, filme_id=favorito.filme_id)

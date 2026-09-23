@@ -98,6 +98,7 @@
 
   <footer class="rodape">
     <p>MOVIEHUSTLER &copy; 2000 — seja bem-vindo(a) de volta.</p>
+    <p class="rodape-tmdb">Dados e pôsteres fornecidos pela TMDB. Este produto usa a API da TMDB, mas não é endossado ou certificado por ela.</p>
   </footer>
 
   <div class="modal-fundo" id="modal-fundo">
@@ -107,7 +108,10 @@
       <div class="modal-poster" id="modal-poster"></div>
 
       <div class="modal-info">
-        <h2 class="modal-nome-filme" id="modal-titulo"></h2>
+        <h2 class="modal-nome-filme" id="modal-titulo">
+          <img class="modal-logo-filme" id="modal-logo-filme" alt="" hidden />
+          <span id="modal-titulo-texto"></span>
+        </h2>
 
         <ul class="modal-detalhes">
           <li id="modal-duracao"></li>
@@ -219,6 +223,14 @@
         <span class="carrinho-total" id="carrinho-total"></span>
         <button type="button" class="botao-finalizar" id="botao-finalizar" disabled>Finalizar aluguel</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-fundo" id="recibo-fundo">
+    <div class="modal-caixa recibo-caixa" id="recibo-caixa">
+      <button type="button" class="modal-fechar" id="recibo-fechar" aria-label="Fechar">&times;</button>
+      <h2 class="recibo-titulo">Recibo do seu aluguel</h2>
+      <iframe class="recibo-iframe" id="recibo-iframe" title="Recibo em PDF"></iframe>
     </div>
   </div>
 

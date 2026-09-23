@@ -7,8 +7,15 @@ from app.schemas.usuario import UsuarioOut
 
 
 class AluguelCreate(BaseModel):
+    # Assim como em Favorito, usuario_id não vem daqui — vem do token de
+    # quem está logado, pra ninguém conseguir alugar "em nome" de outro usuário.
     filme_id: int
     agencia_id: int
+    # Opcional: liga este aluguel ao Pedido da finalização de carrinho atual
+    # (ver POST /pedidos/). None é um Aluguel "avulso", sem pedido associado
+    # — mantido opcional pra não quebrar nenhum outro fluxo que crie um
+    # Aluguel sem passar por um Pedido.
+    pedido_id: int | None = None
 
 
 class AluguelOut(BaseModel):

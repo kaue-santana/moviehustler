@@ -11,6 +11,9 @@ from app.schemas.filme import FilmeCreate, FilmeOut
 router = APIRouter(prefix="/filmes", tags=["filmes"])
 
 
+# Leitura é pública (sem Depends de autenticação) — qualquer visitante pode
+# ver o catálogo, inclusive sem conta (ver fluxo "continuar sem conta" no
+# README). Escrita (criar/atualizar/deletar) abaixo exige get_admin_atual.
 @router.get("/", response_model=list[FilmeOut])
 def listar_filmes(db: Session = Depends(get_db)):
     return db.query(Filme).all()
@@ -30,6 +33,9 @@ def criar_filme(
     db: Session = Depends(get_db),
     admin_atual: Usuario = Depends(get_admin_atual),
 ):
+    # model_dump() converte o schema Pydantic num dict simples; como os nomes
+    # dos campos batem 1:1 com as colunas do model, dá pra usar **dict direto
+    # no construtor do Filme em vez de listar campo por campo.
     novo_filme = Filme(**filme.model_dump())
     db.add(novo_filme)
     db.commit()
@@ -48,6 +54,8 @@ def atualizar_filme(
     if not filme:
         raise HTTPException(status_code=404, detail="Filme não encontrado")
 
+    # setattr em loop em vez de reatribuir campo por campo — atualiza todas
+    # as colunas de uma vez a partir do que veio no corpo da requisição.
     for campo, valor in dados.model_dump().items():
         setattr(filme, campo, valor)
 
@@ -66,6 +74,9 @@ def deletar_filme(
     if not filme:
         raise HTTPException(status_code=404, detail="Filme não encontrado")
 
+    # Trava de integridade: deletar o Filme deixaria os Alugueis antigos
+    # com uma FK apontando pro nada. Em vez de permitir isso (ou de fazer
+    # cascade delete, que apagaria histórico de verdade), bloqueia com 409.
     tem_aluguel = db.query(Aluguel).filter(Aluguel.filme_id == filme_id).first()
     if tem_aluguel:
         raise HTTPException(

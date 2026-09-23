@@ -6,6 +6,7 @@ from app.dependencies import get_usuario_atual
 from app.models.aluguel import Aluguel
 from app.models.filme import Filme
 from app.models.agencia import Agencia
+from app.models.pedido import Pedido
 from app.models.usuario import Usuario
 from app.schemas.aluguel import AluguelCreate, AluguelOut
 
@@ -25,6 +26,10 @@ def listar_alugueis(
     )
 
 
+# Chamada uma vez por item do carrinho ao "Finalizar" (ver
+# frontend/src/carrinho.js) — o frontend cria o Pedido primeiro (POST
+# /pedidos/) e passa o id dele em pedido_id a cada chamada daqui, pra
+# agrupar os itens da mesma finalização sob o mesmo Pedido.
 @router.post("/", response_model=AluguelOut)
 def criar_aluguel(
     aluguel: AluguelCreate,
@@ -39,10 +44,24 @@ def criar_aluguel(
     if not agencia:
         raise HTTPException(status_code=404, detail="Agência não encontrada")
 
+    if aluguel.pedido_id is not None:
+        # Confere que o Pedido existe E pertence a quem está fazendo a
+        # requisição — sem o filtro por usuario_id, qualquer pessoa logada
+        # poderia "grudar" um aluguel no pedido de outra pessoa só
+        # adivinhando o id (mesmo risco do cancelar_aluguel logo abaixo).
+        pedido = (
+            db.query(Pedido)
+            .filter(Pedido.id == aluguel.pedido_id, Pedido.usuario_id == usuario_atual.id)
+            .first()
+        )
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido não encontrado")
+
     novo_aluguel = Aluguel(
         filme_id=aluguel.filme_id,
         agencia_id=aluguel.agencia_id,
         usuario_id=usuario_atual.id,
+        pedido_id=aluguel.pedido_id,
     )
     db.add(novo_aluguel)
     db.commit()
@@ -58,6 +77,8 @@ def cancelar_aluguel(
 ):
     aluguel = (
         db.query(Aluguel)
+        # O filtro por usuario_id (não só id) é o que impede um usuário de
+        # cancelar o aluguel de outra pessoa só adivinhando o id na URL.
         .filter(Aluguel.id == aluguel_id, Aluguel.usuario_id == usuario_atual.id)
         .first()
     )

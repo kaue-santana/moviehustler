@@ -1,3 +1,6 @@
+// Menu do avatar (canto superior) e o painel lateral que ele abre — Perfil,
+// Pedidos, Favoritos e Configurações são só 4 "vistas" do mesmo painel,
+// trocadas via renderizarX() + abrirPainel(titulo).
 import { estaLogado, obterUsuario, sair, atualizarConta } from "./auth.js";
 import { abrirConta, iniciarConta } from "./conta.js";
 import { obterFilmesFavoritos, criarCardFilme, atualizarCardsFavoritos } from "./catalogo.js";
@@ -5,6 +8,7 @@ import { carregarFavoritos, sincronizarFavoritosAposLogin } from "./favoritos.js
 import { buscarMeusAlugueis } from "./movies.js";
 import { formatarPreco } from "./utilitarios.js";
 import { obterTema, definirTema } from "./tema.js";
+import { fecharPainelAdmin } from "./adminEmbutido.js";
 
 const botoesDeslogado = document.getElementById("botoes-deslogado");
 const perfilWrap = document.getElementById("perfil-wrap");
@@ -65,6 +69,10 @@ function renderizarPerfil() {
   `;
 }
 
+// NOTA (recibo/nota fiscal): "pedidos" aqui é só um nome de exibição — o que
+// vem de buscarMeusAlugueis() é uma lista de Aluguel (um por filme, sem
+// agrupamento). Quando o model Pedido de verdade existir no backend, vale
+// cuidado pra não confundir esse "pedido" (nome de tela) com o outro.
 async function renderizarPedidos() {
   painelConteudo.innerHTML = '<p class="painel-carregando">Carregando pedidos...</p>';
 
@@ -155,6 +163,46 @@ function renderizarConfiguracoes() {
         <label for="config-senha">Nova senha</label>
         <input type="password" id="config-senha" placeholder="Deixe em branco pra manter a atual" minlength="6" />
       </div>
+      <div class="campo-conta" id="campo-senha-atual" hidden>
+        <label for="config-senha-atual">Senha atual</label>
+        <input type="password" id="config-senha-atual" placeholder="Confirme sua senha atual pra trocar" />
+      </div>
+
+      <p class="config-secao-titulo">Dados para o recibo</p>
+      <p class="config-secao-descricao">Aparecem no PDF do recibo de aluguel. Opcionais — deixe em branco se não quiser informar.</p>
+      <div class="campo-conta">
+        <label for="config-cpf">CPF</label>
+        <input type="text" id="config-cpf" placeholder="000.000.000-00" value="${usuario?.cpf ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-logradouro">Rua/Avenida</label>
+        <input type="text" id="config-logradouro" value="${usuario?.endereco_logradouro ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-numero">Número</label>
+        <input type="text" id="config-numero" value="${usuario?.endereco_numero ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-complemento">Complemento</label>
+        <input type="text" id="config-complemento" placeholder="Apto, bloco, etc. (opcional)" value="${usuario?.endereco_complemento ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-bairro">Bairro</label>
+        <input type="text" id="config-bairro" value="${usuario?.endereco_bairro ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-cidade">Cidade</label>
+        <input type="text" id="config-cidade" value="${usuario?.endereco_cidade ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-estado">Estado (UF)</label>
+        <input type="text" id="config-estado" placeholder="SC" maxlength="2" value="${usuario?.endereco_estado ?? ""}" />
+      </div>
+      <div class="campo-conta">
+        <label for="config-cep">CEP</label>
+        <input type="text" id="config-cep" placeholder="00000-000" value="${usuario?.endereco_cep ?? ""}" />
+      </div>
+
       <button type="submit" class="botao-conta-enviar">Salvar alterações</button>
       <p class="mensagem-conta" id="config-conta-mensagem" hidden></p>
     </form>
@@ -166,22 +214,58 @@ function renderizarConfiguracoes() {
 
   const formEditarConta = document.getElementById("form-editar-conta");
   const mensagemConta = document.getElementById("config-conta-mensagem");
+  const campoSenha = document.getElementById("config-senha");
+  const campoSenhaAtual = document.getElementById("campo-senha-atual");
+
+  // Só pede a senha atual quando a pessoa de fato digita uma senha nova —
+  // não faz sentido pedir confirmação de senha só pra trocar o nome/e-mail.
+  campoSenha.addEventListener("input", () => {
+    campoSenhaAtual.hidden = campoSenha.value.length === 0;
+  });
 
   formEditarConta.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     mensagemConta.hidden = true;
 
-    const senha = document.getElementById("config-senha").value;
+    const senha = campoSenha.value;
+    const senhaAtual = document.getElementById("config-senha-atual").value;
     const dados = {
       nome: document.getElementById("config-nome").value,
       email: document.getElementById("config-email").value,
+      // Sempre mandados (mesmo vazios) — diferente de senha/senha_atual, que só
+      // vão no corpo quando a pessoa realmente quer trocar. Aqui, um campo
+      // deixado em branco de propósito precisa sobrescrever um valor salvo
+      // antes (ex: apagar um CPF cadastrado errado), então "" é um valor
+      // válido a enviar, não "nada mudou" — ver a checagem `is not None` em
+      // PUT /auth/me (backend/app/routes/auth.py) que só ignora `None` de
+      // verdade, nunca string vazia.
+      cpf: document.getElementById("config-cpf").value,
+      endereco_logradouro: document.getElementById("config-logradouro").value,
+      endereco_numero: document.getElementById("config-numero").value,
+      endereco_complemento: document.getElementById("config-complemento").value,
+      endereco_bairro: document.getElementById("config-bairro").value,
+      endereco_cidade: document.getElementById("config-cidade").value,
+      endereco_estado: document.getElementById("config-estado").value,
+      endereco_cep: document.getElementById("config-cep").value,
     };
-    if (senha) dados.senha = senha;
+
+    if (senha) {
+      if (!senhaAtual) {
+        mensagemConta.textContent = "Digite sua senha atual pra confirmar a troca.";
+        mensagemConta.className = "mensagem-conta";
+        mensagemConta.hidden = false;
+        return;
+      }
+      dados.senha = senha;
+      dados.senha_atual = senhaAtual;
+    }
 
     try {
       await atualizarConta(dados);
       atualizarAreaConta();
-      document.getElementById("config-senha").value = "";
+      campoSenha.value = "";
+      document.getElementById("config-senha-atual").value = "";
+      campoSenhaAtual.hidden = true;
       mensagemConta.textContent = "Dados atualizados com sucesso!";
       mensagemConta.className = "mensagem-conta mensagem-conta-sucesso";
       mensagemConta.hidden = false;
@@ -244,15 +328,21 @@ painelFundo.addEventListener("click", (evento) => {
   }
 });
 
+// Passada pra conta.js via iniciarConta() no fim do arquivo — roda depois
+// de qualquer login/cadastro bem-sucedido (ver aoAutenticar em conta.js).
 async function aoAutenticar() {
   await sincronizarFavoritosAposLogin();
   atualizarAreaConta();
   atualizarCardsFavoritos();
 }
 
+// Reage ao evento global disparado por fetchAutenticado() em auth.js quando
+// qualquer chamada à API recebe 401 — fecha tudo que dependia da sessão e
+// convida a pessoa a logar de novo.
 window.addEventListener("sessao-expirada", () => {
   fecharMenu();
   fecharPainel();
+  fecharPainelAdmin();
   atualizarAreaConta();
   atualizarCardsFavoritos();
   abrirConta("login", "Sua sessão expirou. Faça login novamente.");

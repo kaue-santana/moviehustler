@@ -1,3 +1,6 @@
+# Schema genérico reaproveitado pra qualquer listagem paginada da API
+# (ex: Pagina[VendaOut], Pagina[UsuarioOut] em app/routes/admin.py) —
+# em vez de duplicar essa estrutura de paginação pra cada tipo de item.
 from typing import Generic, TypeVar
 from pydantic import BaseModel
 

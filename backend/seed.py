@@ -4,11 +4,24 @@ from app.database import Base, engine, SessionLocal
 from app.models.filme import Filme
 from app.models.agencia import Agencia
 
+# Bairros de Florianópolis/SC.
 AGENCIAS = [
+    {"nome": "MovieHustler Rio Vermelho", "bairro": "Rio Vermelho"},
+    {"nome": "MovieHustler Pantanal", "bairro": "Pantanal"},
     {"nome": "MovieHustler Centro", "bairro": "Centro"},
-    {"nome": "MovieHustler Jardins", "bairro": "Jardins"},
-    {"nome": "MovieHustler Vila Nova", "bairro": "Vila Nova"},
-    {"nome": "MovieHustler Zona Sul", "bairro": "Zona Sul"},
+    {"nome": "MovieHustler Vargem G", "bairro": "Vargem Grande"},
+    {"nome": "MovieHustler Saco dos Limões", "bairro": "Saco dos Limões"},
+    {"nome": "MovieHustler Agronômica", "bairro": "Agronômica"},
+    {"nome": "MovieHustler Córrego G", "bairro": "Córrego Grande"},
+    {"nome": "MovieHustler Trindade", "bairro": "Trindade"},
+    {"nome": "MovieHustler Itacorubi", "bairro": "Itacorubi"},
+    {"nome": "MovieHustler Lagoa", "bairro": "Lagoa da Conceição"},
+    {"nome": "MovieHustler Campeche", "bairro": "Campeche"},
+    {"nome": "MovieHustler Coqueiros", "bairro": "Coqueiros"},
+    {"nome": "MovieHustler Ingleses", "bairro": "Ingleses"},
+    {"nome": "MovieHustler Barra", "bairro": "Barra da Lagoa"},
+    {"nome": "MovieHustler Santo Antônio de Lisboa", "bairro": "Santo Antônio de Lisboa"},
+    {"nome": "MovieHustler Canasvieiras", "bairro": "Canasvieiras"},
 ]
 
 FILMES = [
@@ -190,9 +203,13 @@ FILMES = [
     },
 ]
 
+# Garante que as tabelas existam antes de inserir (útil rodando este script
+# num banco novo, sem precisar subir a API primeiro).
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
+# count() == 0 é a trava de idempotência: rodar `python seed.py` de novo
+# não duplica os filmes/agências já inseridos numa execução anterior.
 if db.query(Filme).count() == 0:
     db.add_all(Filme(**dados) for dados in FILMES)
     db.commit()

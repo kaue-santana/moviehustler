@@ -1,8 +1,13 @@
+// Favoritos funcionam tanto deslogado (guardado só no localStorage) quanto
+// logado (sincronizado com a conta via API) — a lógica de qual usar está
+// espalhada pelas funções abaixo checando estaLogado() a cada operação.
 import { URL_API } from "./config.js";
 import { estaLogado, fetchAutenticado } from "./auth.js";
 
 const CHAVE_FAVORITOS = "moviehustler_favoritos";
 
+// Cache em memória (evita reconsultar localStorage/API a cada ehFavorito()
+// chamado ao renderizar cada card do catálogo).
 let favoritos = new Set();
 
 function carregarFavoritosLocais() {
@@ -66,6 +71,10 @@ export function ehFavorito(idFilme) {
 export async function alternarFavorito(idFilme, aoMudar) {
   const eraFavorito = favoritos.has(idFilme);
 
+  // Atualização otimista: muda o estado local e já chama aoMudar() (que
+  // redesenha o coração de favorito) ANTES de confirmar com o servidor —
+  // a UI responde na hora em vez de esperar o round-trip da rede. Se a
+  // chamada falhar lá embaixo, desfazemos essa mudança no catch.
   if (eraFavorito) {
     favoritos.delete(idFilme);
   } else {
@@ -93,6 +102,7 @@ export async function alternarFavorito(idFilme, aoMudar) {
       if (!resposta.ok) throw new Error("Falha ao adicionar favorito.");
     }
   } catch (erro) {
+    // Desfaz a mudança otimista de cima, já que o servidor não confirmou.
     console.warn("Não foi possível salvar o favorito na conta.", erro);
     if (eraFavorito) {
       favoritos.add(idFilme);

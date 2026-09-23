@@ -1,4 +1,8 @@
-import { estaLogado, obterUsuario, login, sair } from "./auth.js";
+// Painel admin: 5 abas (visão geral, clientes, vendas, produtos, devoluções),
+// cada uma com sua própria função renderizarX() que troca o innerHTML de
+// #admin-conteudo por completo — sem framework, sem diffing, é "apagar e
+// redesenhar" a cada mudança de aba/página/busca.
+import { obterUsuario, sair } from "./auth.js";
 import { formatarPreco } from "./utilitarios.js";
 import { buscarFilmes, criarFilme, atualizarFilme, removerFilme } from "./movies.js";
 import {
@@ -11,14 +15,11 @@ import {
   buscarFaturamentoMedio,
 } from "./adminApi.js";
 
-const loginAdmin = document.getElementById("login-admin");
-const painelAdmin = document.getElementById("painel-admin");
-const formLoginAdmin = document.getElementById("form-login-admin");
-const mensagemLoginAdmin = document.getElementById("admin-login-mensagem");
-const nomeAdmin = document.getElementById("admin-nome");
-const botaoSairAdmin = document.getElementById("admin-sair");
-const abas = document.getElementById("admin-abas");
-const conteudo = document.getElementById("admin-conteudo");
+let painelAdmin;
+let nomeAdmin;
+let botaoSairAdmin;
+let abas;
+let conteudo;
 
 let abaAtual = "visao-geral";
 let paginaClientes = 1;
@@ -26,6 +27,9 @@ let paginaVendas = 1;
 let buscaClientes = "";
 let buscaVendas = "";
 
+// Usado nos campos de busca (ver ligarBusca) pra não disparar uma requisição
+// a cada tecla digitada — só dispara 350ms depois da última tecla, cancelando
+// o timer anterior a cada nova tecla enquanto a pessoa ainda está digitando.
 function debounce(fn, atraso) {
   let temporizador;
   return (...args) => {
@@ -34,60 +38,38 @@ function debounce(fn, atraso) {
   };
 }
 
-function mostrarLogin(mensagem) {
-  painelAdmin.hidden = true;
-  loginAdmin.hidden = false;
-  mensagemLoginAdmin.hidden = !mensagem;
-  if (mensagem) mensagemLoginAdmin.textContent = mensagem;
-}
+// Quem chega aqui já passou pelo login normal do site e já foi confirmado
+// admin (ver adminEmbutido.js) — não existe mais uma tela de login própria.
+export function iniciarAdmin() {
+  painelAdmin = document.getElementById("painel-admin");
+  nomeAdmin = document.getElementById("admin-nome");
+  botaoSairAdmin = document.getElementById("admin-sair");
+  abas = document.getElementById("admin-abas");
+  conteudo = document.getElementById("admin-conteudo");
 
-function mostrarPainel() {
-  loginAdmin.hidden = true;
-  painelAdmin.hidden = false;
+  botaoSairAdmin.addEventListener("click", () => {
+    sair();
+    location.reload();
+  });
+
+  abas.addEventListener("click", (evento) => {
+    const botao = evento.target.closest(".admin-aba");
+    if (!botao) return;
+
+    abaAtual = botao.dataset.aba;
+    paginaClientes = 1;
+    paginaVendas = 1;
+    buscaClientes = "";
+    buscaVendas = "";
+    for (const item of abas.children) {
+      item.classList.toggle("ativa", item === botao);
+    }
+    renderizarAba(abaAtual);
+  });
+
   nomeAdmin.textContent = obterUsuario()?.nome ?? "";
   renderizarAba(abaAtual);
 }
-
-formLoginAdmin.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  mensagemLoginAdmin.hidden = true;
-
-  const email = document.getElementById("admin-email").value;
-  const senha = document.getElementById("admin-senha").value;
-
-  try {
-    const usuario = await login(email, senha);
-    if (!usuario.is_admin) {
-      sair();
-      mostrarLogin("Essa conta não tem acesso administrativo.");
-      return;
-    }
-    formLoginAdmin.reset();
-    mostrarPainel();
-  } catch (erro) {
-    mostrarLogin(erro.message);
-  }
-});
-
-botaoSairAdmin.addEventListener("click", () => {
-  sair();
-  mostrarLogin();
-});
-
-abas.addEventListener("click", (evento) => {
-  const botao = evento.target.closest(".admin-aba");
-  if (!botao) return;
-
-  abaAtual = botao.dataset.aba;
-  paginaClientes = 1;
-  paginaVendas = 1;
-  buscaClientes = "";
-  buscaVendas = "";
-  for (const item of abas.children) {
-    item.classList.toggle("ativa", item === botao);
-  }
-  renderizarAba(abaAtual);
-});
 
 async function renderizarAba(aba) {
   conteudo.innerHTML = '<p class="admin-carregando">Carregando...</p>';
@@ -143,10 +125,16 @@ function ligarPaginacao(aoAnterior, aoProximo) {
   document.getElementById("pagina-proxima").addEventListener("click", aoProximo);
 }
 
+// Lê as cores direto do CSS (variáveis --cor-acento etc) em vez de hardcodear
+// hex no JS — assim os gráficos do Chart.js acompanham o tema claro/escuro
+// automaticamente, sem precisar redesenhar ao trocar de tema.
 function corTema(variavel) {
   return getComputedStyle(document.documentElement).getPropertyValue(variavel).trim();
 }
 
+// Guardadas em módulo pra poder chamar .destroy() antes de redesenhar —
+// sem isso, trocar de aba e voltar pra "Visão geral" empilharia um Chart.js
+// novo em cima do antigo no mesmo <canvas>, vazando memória e sobrepondo gráficos.
 let graficoFaturamento = null;
 let graficoMaisAlugados = null;
 
@@ -335,6 +323,10 @@ async function renderizarVendas() {
     buscarVendas(paginaVendas, 10, buscaVendas),
     buscarDevolucoes(),
   ]);
+  // Não existe um campo "status" na venda — o status é inferido cruzando
+  // duas listas: se o id do aluguel aparece na lista de devoluções, foi
+  // devolvido; senão, ainda está com o cliente. O Set é só pra essa checagem
+  // (devolvidos.has(...)) ser O(1) em vez de percorrer o array de novo pra cada venda.
   const devolvidos = new Set(devolucoes.map((d) => d.aluguel.id));
 
   conteudo.innerHTML = `
@@ -416,6 +408,10 @@ function preencherFormFilme(form, filme) {
   form.elements.valor.value = filme.valor;
 }
 
+// O mesmo <form> serve pra criar E editar filme — entrarModoEdicao() só
+// preenche os campos e marca form.dataset.editando com o id; o handler de
+// submit (mais abaixo) decide entre criarFilme/atualizarFilme checando esse
+// dataset, em vez de ter dois formulários (e dois handlers) separados.
 function entrarModoEdicao(form, filme) {
   form.dataset.editando = filme.id;
   preencherFormFilme(form, filme);
@@ -487,6 +483,9 @@ async function renderizarProdutos() {
     const dados = new FormData(form);
     const filmeEditado = {
       titulo: dados.get("titulo"),
+      // O form tem um <input type="text"> só pra gêneros (não um multi-select),
+      // então o usuário digita "Ação, Drama" e aqui a gente separa por vírgula,
+      // tira espaços em volta e descarta entradas vazias (ex: vírgula dupla).
       generos: dados
         .get("generos")
         .split(",")
@@ -568,12 +567,3 @@ async function renderizarDevolucoes() {
   `;
 }
 
-window.addEventListener("sessao-expirada", () => {
-  mostrarLogin("Sua sessão expirou. Faça login novamente.");
-});
-
-if (estaLogado() && obterUsuario()?.is_admin) {
-  mostrarPainel();
-} else {
-  mostrarLogin();
-}
