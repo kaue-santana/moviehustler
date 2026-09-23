@@ -23,6 +23,13 @@ class AluguelOut(BaseModel):
     data_aluguel: datetime
     filme: FilmeOut
     agencia: AgenciaOut
+    # pedido_id: pra o frontend agrupar aluguéis da mesma finalização de
+    # carrinho (ver renderizarPedidos em perfil.js) e oferecer "Ver recibo"
+    # só pros que têm um Pedido de verdade associado.
+    pedido_id: int | None = None
+    # None nos aluguéis criados antes desta coluna existir — quem lê usa
+    # filme.valor como aproximação nesse caso (ver comentário no model).
+    valor_pago: float | None = None
 
     class Config:
         from_attributes = True

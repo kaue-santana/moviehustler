@@ -90,14 +90,18 @@ def gerar_recibo_pdf(pedido) -> bytes:
     linhas_tabela = [[celula("Filme", True), celula("Agência (retirada)", True), celula("Valor", True)]]
     total = 0.0
     for aluguel in pedido.alugueis:
+        # valor_pago é o preço congelado no momento do aluguel (ver
+        # app/models/aluguel.py) — só cai pro valor atual do filme em
+        # aluguéis antigos, criados antes dessa coluna existir.
+        valor = aluguel.valor_pago if aluguel.valor_pago is not None else aluguel.filme.valor
         linhas_tabela.append(
             [
                 celula(aluguel.filme.titulo),
                 celula(f"{aluguel.agencia.nome} — {aluguel.agencia.bairro}"),
-                celula(formatar_preco(aluguel.filme.valor)),
+                celula(formatar_preco(valor)),
             ]
         )
-        total += aluguel.filme.valor
+        total += valor
     linhas_tabela.append([celula(""), celula("<b>Total</b>"), celula(f"<b>{formatar_preco(total)}</b>")])
 
     tabela = Table(linhas_tabela, colWidths=[6.5 * cm, 6.5 * cm, 4 * cm])

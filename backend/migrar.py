@@ -26,6 +26,7 @@ from app.models import agencia, aluguel, devolucao, favorito, filme, pedido, usu
 
 MIGRACOES_MANUAIS = [
     "ALTER TABLE alugueis ADD COLUMN IF NOT EXISTS pedido_id INTEGER REFERENCES pedidos(id)",
+    "ALTER TABLE alugueis ADD COLUMN IF NOT EXISTS valor_pago FLOAT",
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR",
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco_logradouro VARCHAR",
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco_numero VARCHAR",

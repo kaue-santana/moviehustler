@@ -62,6 +62,10 @@ def criar_aluguel(
         agencia_id=aluguel.agencia_id,
         usuario_id=usuario_atual.id,
         pedido_id=aluguel.pedido_id,
+        # Congela o preço de agora — se o valor do filme mudar depois, este
+        # aluguel (e o recibo gerado a partir dele) continua refletindo o
+        # que foi pago de fato, não o preço atual do catálogo.
+        valor_pago=filme.valor,
     )
     db.add(novo_aluguel)
     db.commit()

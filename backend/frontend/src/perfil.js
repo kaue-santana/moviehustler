@@ -9,6 +9,7 @@ import { buscarMeusAlugueis } from "./movies.js";
 import { formatarPreco } from "./utilitarios.js";
 import { obterTema, definirTema } from "./tema.js";
 import { fecharPainelAdmin } from "./adminEmbutido.js";
+import { abrirRecibo } from "./recibo.js";
 
 const botoesDeslogado = document.getElementById("botoes-deslogado");
 const perfilWrap = document.getElementById("perfil-wrap");
@@ -69,41 +70,72 @@ function renderizarPerfil() {
   `;
 }
 
-// NOTA (recibo/nota fiscal): "pedidos" aqui é só um nome de exibição — o que
-// vem de buscarMeusAlugueis() é uma lista de Aluguel (um por filme, sem
-// agrupamento). Quando o model Pedido de verdade existir no backend, vale
-// cuidado pra não confundir esse "pedido" (nome de tela) com o outro.
+// O que vem de buscarMeusAlugueis() é uma lista de Aluguel (um por filme) —
+// agrupamos aqui por pedido_id antes de desenhar, pra mostrar uma finalização
+// de carrinho com vários filmes como um cartão só (com um botão de recibo),
+// em vez de uma linha solta por filme. Aluguéis sem pedido_id (avulsos, ou
+// criados antes desse campo existir) viram cada um seu próprio grupo, sem
+// botão de recibo — não existe Pedido de verdade pra gerar um PDF a partir dele.
+function agruparPorPedido(alugueis) {
+  const grupos = new Map();
+  for (const aluguel of alugueis) {
+    const chave = aluguel.pedido_id ?? `avulso-${aluguel.id}`;
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(aluguel);
+  }
+  return [...grupos.values()];
+}
+
 async function renderizarPedidos() {
   painelConteudo.innerHTML = '<p class="painel-carregando">Carregando pedidos...</p>';
 
-  let pedidos;
+  let alugueis;
   try {
-    pedidos = await buscarMeusAlugueis();
+    alugueis = await buscarMeusAlugueis();
   } catch (erro) {
     console.error(erro);
     painelConteudo.innerHTML = '<p class="painel-carregando">Não foi possível carregar seus pedidos.</p>';
     return;
   }
 
-  if (pedidos.length === 0) {
+  if (alugueis.length === 0) {
     painelConteudo.innerHTML = '<p class="painel-carregando">Você ainda não alugou nenhum filme.</p>';
     return;
   }
 
-  painelConteudo.innerHTML = pedidos
-    .map((pedido) => {
-      const data = new Date(pedido.data_aluguel).toLocaleDateString("pt-BR");
-      return `
-        <div class="pedido-item">
-          <div>
-            <p class="pedido-titulo">${pedido.filme.titulo}</p>
-            <p class="pedido-meta">${pedido.agencia.nome} — ${pedido.agencia.bairro} · ${data}</p>
-          </div>
-          <span class="pedido-preco">${formatarPreco(pedido.filme.valor)}</span>
-        </div>
-      `;
-    })
-    .join("");
+  painelConteudo.innerHTML = "";
+
+  for (const itens of agruparPorPedido(alugueis)) {
+    const pedidoId = itens[0].pedido_id;
+    const data = new Date(itens[0].data_aluguel).toLocaleDateString("pt-BR");
+    // valor_pago é o preço congelado no momento do aluguel — só cai pro
+    // valor atual do filme em aluguéis criados antes dessa coluna existir.
+    const total = itens.reduce((soma, item) => soma + (item.valor_pago ?? item.filme.valor), 0);
+    const titulos = itens.map((item) => item.filme.titulo).join(", ");
+    const meta =
+      itens.length > 1
+        ? `${itens.length} filmes · ${data}`
+        : `${itens[0].agencia.nome} — ${itens[0].agencia.bairro} · ${data}`;
+
+    const bloco = document.createElement("div");
+    bloco.className = "pedido-item";
+    bloco.innerHTML = `
+      <div>
+        <p class="pedido-titulo">${titulos}</p>
+        <p class="pedido-meta">${meta}</p>
+      </div>
+      <div class="pedido-item-acoes">
+        <span class="pedido-preco">${formatarPreco(total)}</span>
+        ${pedidoId ? '<button type="button" class="botao-ver-recibo">Ver recibo</button>' : ""}
+      </div>
+    `;
+
+    if (pedidoId) {
+      bloco.querySelector(".botao-ver-recibo").addEventListener("click", () => abrirRecibo(pedidoId));
+    }
+
+    painelConteudo.appendChild(bloco);
+  }
 }
 
 function renderizarFavoritos() {

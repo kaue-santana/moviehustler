@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Float, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -20,6 +20,15 @@ class Aluguel(Base):
     # retroativamente um agrupamento que nunca existiu) — "sem pedido
     # associado" é um estado válido, não um erro.
     pedido_id = Column(Integer, ForeignKey("pedidos.id"), nullable=True)
+
+    # Cópia do Filme.valor no momento em que o aluguel foi criado — resolve o
+    # aviso deixado em Filme.valor: sem isso, o recibo e o histórico de
+    # "Meus pedidos" mostrariam o preço ATUAL do filme, não o que foi pago de
+    # fato. nullable=True pelo mesmo motivo do pedido_id: alugueis antigos,
+    # criados antes desta coluna existir, não têm como preencher isso
+    # retroativamente — quem lê essa coluna trata None como "usar
+    # filme.valor como aproximação" (ver app/recibo.py e perfil.js).
+    valor_pago = Column(Float, nullable=True)
 
     filme = relationship("Filme")
     agencia = relationship("Agencia")
