@@ -83,10 +83,69 @@ def buscar_faixa_etaria(filme_id):
     return "Livre"
 
 
+# O endpoint de providers da TMDb mistura o serviço "de verdade" com
+# variantes de plano (ex: "Netflix Standard with Ads") e canais revendidos
+# por outra plataforma (ex: "Paramount+ Amazon Channel" — é só como assinar
+# o Paramount+ dentro da Amazon, não um streaming à parte). Sem isso, um
+# filme na Netflix aparecia como dois streamings diferentes na tela. Mapeia
+# cada nome bruto pro serviço canônico (o `in` pega qualquer variante que
+# contenha o nome da marca) e descarta o que não reconhece — provedores bem
+# obscuros (ex: "Oldflix", "Filmelier Plus") acabam de fora, troca aceitável
+# por uma lista mais limpa das plataformas que a maioria das pessoas conhece.
+MARCAS_STREAMING = [
+    "netflix",
+    "amazon prime video",
+    "hbo max",
+    "max",
+    "disney",
+    "paramount",
+    "apple tv",
+    "globoplay",
+    "star+",
+    "claro tv",
+    "looke",
+    "telecine",
+    "mgm",
+    "universal+",
+    "lionsgate",
+    "amc+",
+    "crunchyroll",
+    "mubi",
+    "filmicca",
+]
+
+# Nome de exibição, quando difere da marca usada só pra detectar (ex: "hbo
+# max" e "max" apontam pro mesmo serviço, já rebatizado — mas o texto que a
+# TMDb manda ainda varia).
+NOMES_EXIBICAO = {
+    "amazon prime video": "Prime Video",
+    "hbo max": "Max",
+    "max": "Max",
+    "disney": "Disney+",
+    "paramount": "Paramount+",
+    "apple tv": "Apple TV+",
+    "mgm": "MGM+",
+    "claro tv": "Claro tv+",
+    "amc+": "AMC+",
+    "lionsgate": "Lionsgate+",
+    "mubi": "MUBI",
+}
+
+
+def normalizar_streaming(nome_bruto):
+    chave = nome_bruto.lower()
+    for marca in MARCAS_STREAMING:
+        if marca in chave:
+            return NOMES_EXIBICAO.get(marca, marca.title())
+    return None
+
+
 def buscar_streamings(filme_id):
     dados = chamar_api(f"/movie/{filme_id}/watch/providers")
     provedores_br = dados.get("results", {}).get("BR", {}).get("flatrate", [])
-    return [p["provider_name"] for p in provedores_br]
+    nomes = {normalizar_streaming(p["provider_name"]) for p in provedores_br}
+    nomes.discard(None)
+    return sorted(nomes)
 
 
 def buscar_logo(filme_id):

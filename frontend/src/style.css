@@ -837,6 +837,12 @@ body {
   justify-content: center;
 }
 
+/* segunda fileira (filtro por streaming), logo abaixo da de gênero — menos
+   espaço em cima pra ficar visualmente agrupada com a primeira */
+.categorias-streaming {
+  margin-top: 0.6rem;
+}
+
 .botao-categoria {
   background: var(--cor-superficie);
   border: 2px solid var(--cor-acento);

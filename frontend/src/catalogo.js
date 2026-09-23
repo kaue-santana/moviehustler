@@ -3,7 +3,13 @@ import { formatarPreco, normalizarTexto } from "./utilitarios.js";
 import { carregarFavoritos, ehFavorito, alternarFavorito } from "./favoritos.js";
 import { abrirModal } from "./modal.js";
 
+// Mesmo texto que o backend manda quando um filme não tem streaming nenhum
+// (ver popular_filmes_tmdb.py) — não é um serviço de verdade, então não
+// pode virar um botão de filtro (ver iniciarCatalogo).
+const NENHUM_STREAMING = "Não disponível em streaming no momento";
+
 const containerCategorias = document.getElementById("categorias");
+const containerStreamings = document.getElementById("streamings-filtro");
 const containerGrade = document.getElementById("grade-filmes");
 const tituloSecao = document.getElementById("titulo-secao");
 const campoBusca = document.getElementById("campo-busca");
@@ -12,23 +18,25 @@ const selectOrdenar = document.getElementById("ordenar");
 // Estado da tela de catálogo inteiro em módulo (sem framework de estado) —
 // toda mudança nesses valores é seguida de uma chamada a renderizarFilmes().
 let categoriaAtual = "Todos";
+let streamingAtual = "Todos";
 let termoBusca = "";
 let criterioOrdenacao = "padrao";
 let filmes = [];
 let categoriasDisponiveis = [];
+let streamingsDisponiveis = [];
 
-// A lista de categorias não é mais fixa no código — vem dos gêneros que os
-// filmes de verdade da TMDb realmente têm, ordenada do gênero com mais
-// filmes pro com menos (é o que também define a ordem das fileiras na tela
-// inicial, estilo streaming).
-function calcularCategoriasDisponiveis() {
+// Conta quantos filmes existem por valor de um campo que é uma lista (ex:
+// generos, streamings) e devolve os valores ordenados do mais frequente pro
+// menos — reaproveitada tanto pra categorias (gênero) quanto pro filtro de
+// streaming, pra nenhum dos dois ficar fixo/desatualizado no código.
+function calcularValoresDisponiveis(obterLista) {
   const contagem = new Map();
   for (const filme of filmes) {
-    for (const genero of filme.generos) {
-      contagem.set(genero, (contagem.get(genero) ?? 0) + 1);
+    for (const valor of obterLista(filme)) {
+      contagem.set(valor, (contagem.get(valor) ?? 0) + 1);
     }
   }
-  return [...contagem.entries()].sort((a, b) => b[1] - a[1]).map(([genero]) => genero);
+  return [...contagem.entries()].sort((a, b) => b[1] - a[1]).map(([valor]) => valor);
 }
 
 function ordenarFilmes(lista, criterio) {
@@ -50,20 +58,34 @@ function ordenarFilmes(lista, criterio) {
   }
 }
 
-function criarBotaoCategoria(nome, ativo) {
+function criarBotaoFiltro(nome, ativo, aoClicar) {
   const botao = document.createElement("button");
   botao.type = "button";
   botao.className = "botao-categoria" + (ativo ? " ativo" : "");
   botao.textContent = nome;
-  botao.addEventListener("click", () => selecionarCategoria(nome));
+  botao.addEventListener("click", () => aoClicar(nome));
   return botao;
 }
 
 function renderizarCategorias(categoriaAtiva) {
   containerCategorias.innerHTML = "";
-  containerCategorias.appendChild(criarBotaoCategoria("Todos", categoriaAtiva === "Todos"));
+  containerCategorias.appendChild(criarBotaoFiltro("Todos", categoriaAtiva === "Todos", selecionarCategoria));
   for (const categoria of categoriasDisponiveis) {
-    containerCategorias.appendChild(criarBotaoCategoria(categoria, categoriaAtiva === categoria));
+    containerCategorias.appendChild(
+      criarBotaoFiltro(categoria, categoriaAtiva === categoria, selecionarCategoria)
+    );
+  }
+}
+
+function renderizarStreamings(streamingAtivo) {
+  containerStreamings.innerHTML = "";
+  containerStreamings.appendChild(
+    criarBotaoFiltro("Todos", streamingAtivo === "Todos", selecionarStreaming)
+  );
+  for (const streaming of streamingsDisponiveis) {
+    containerStreamings.appendChild(
+      criarBotaoFiltro(streaming, streamingAtivo === streaming, selecionarStreaming)
+    );
   }
 }
 
@@ -120,7 +142,24 @@ function mostrarErroCarregamento() {
 // Qualquer filtro ativo já é uma intenção explícita de ver uma lista única
 // de resultados, então cai pra grade tradicional.
 function estaNaNavegacaoInicial() {
-  return categoriaAtual === "Todos" && termoBusca.trim() === "" && criterioOrdenacao === "padrao";
+  return (
+    categoriaAtual === "Todos" &&
+    streamingAtual === "Todos" &&
+    termoBusca.trim() === "" &&
+    criterioOrdenacao === "padrao"
+  );
+}
+
+// Título da seção quando não está na navegação inicial — combina categoria
+// e streaming quando os dois estão ativos ao mesmo tempo, em vez de só um
+// sobrescrever o outro.
+function calcularTituloSecao() {
+  if (categoriaAtual !== "Todos" && streamingAtual !== "Todos") {
+    return `${categoriaAtual} em ${streamingAtual}`;
+  }
+  if (categoriaAtual !== "Todos") return categoriaAtual;
+  if (streamingAtual !== "Todos") return streamingAtual;
+  return "Resultados da busca";
 }
 
 function renderizarFileirasPorGenero() {
@@ -163,13 +202,14 @@ function renderizarFilmes() {
   const filmesFiltrados = ordenarFilmes(
     filmes.filter((filme) => {
       const passaCategoria = categoriaAtual === "Todos" || filme.generos.includes(categoriaAtual);
+      const passaStreaming = streamingAtual === "Todos" || filme.streamings.includes(streamingAtual);
       const passaBusca = termo === "" || normalizarTexto(filme.titulo).includes(termo);
-      return passaCategoria && passaBusca;
+      return passaCategoria && passaStreaming && passaBusca;
     }),
     criterioOrdenacao
   );
 
-  tituloSecao.textContent = categoriaAtual === "Todos" ? "Resultados da busca" : categoriaAtual;
+  tituloSecao.textContent = calcularTituloSecao();
 
   containerGrade.className = "grade-filmes";
   containerGrade.innerHTML = "";
@@ -193,6 +233,12 @@ function selecionarCategoria(categoria) {
   renderizarFilmes();
 }
 
+function selecionarStreaming(streaming) {
+  streamingAtual = streaming;
+  renderizarStreamings(streamingAtual);
+  renderizarFilmes();
+}
+
 campoBusca.addEventListener("input", (evento) => {
   termoBusca = evento.target.value;
   renderizarFilmes();
@@ -213,6 +259,8 @@ export function irParaInicio() {
   campoBusca.value = "";
   criterioOrdenacao = "padrao";
   selectOrdenar.value = "padrao";
+  streamingAtual = "Todos";
+  renderizarStreamings(streamingAtual);
   selecionarCategoria("Todos");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -234,6 +282,10 @@ export async function iniciarCatalogo() {
     return;
   }
 
-  categoriasDisponiveis = calcularCategoriasDisponiveis();
+  categoriasDisponiveis = calcularValoresDisponiveis((filme) => filme.generos);
+  streamingsDisponiveis = calcularValoresDisponiveis((filme) => filme.streamings).filter(
+    (streaming) => streaming !== NENHUM_STREAMING
+  );
+  renderizarStreamings("Todos");
   selecionarCategoria("Todos");
 }
