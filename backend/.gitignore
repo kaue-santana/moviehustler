@@ -6,4 +6,4 @@ venv/
 .env
 
 # Fonte comercial (ITC Machine) — licenciada pro usuário, não pra redistribuir
-frontend/src/fonts/ITC Machine LT Medium.ttf
+frontend/src/fonts/ITC Machine Medium.otf
