@@ -6,4 +6,4 @@ const EH_LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
 
 export const URL_API = EH_LOCAL
   ? "http://localhost:8000"
-  : "https://moviehustler.vercel.app";
+  : "https://moviehustlerback.vercel.app";
