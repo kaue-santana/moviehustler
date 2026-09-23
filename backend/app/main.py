@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.routes import filmes, agencias, alugueis, auth, favoritos, admin, pedidos
 
@@ -30,6 +33,22 @@ app.include_router(admin.router)
 app.include_router(pedidos.router)
 
 
-@app.get("/")
-def raiz():
+@app.get("/status")
+def status():
     return {"status": "ok"}
+
+
+# Serve o frontend (frontend/index.html + frontend/src/...) na mesma origem
+# da API — daqui pra baixo é só arquivo estático, então tem que ser o último
+# registro: uma rota declarada depois de um mount não tem prioridade sobre
+# ele, mas uma declarada antes (como as dos routers acima, e /status) sempre
+# vence — é assim que /filmes/, /auth/..., etc. continuam sendo a API de
+# verdade, e só o que sobra (/, /src/app.js, ...) cai pro arquivo estático.
+# De propósito NÃO se chama "public/": a Vercel trata esse nome de forma
+# especial (promove pro CDN sozinha, sem nenhum app.mount() — e pede
+# explicitamente pra não montar essa pasta na mão), o que colidiria com este
+# mount. Com outro nome, o StaticFiles abaixo é quem cuida de tudo, local e
+# em produção — sem CDN automática, mas sem esse conflito. Ver
+# https://vercel.com/docs/frameworks/backend/fastapi#the-public-directory
+DIRETORIO_FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/", StaticFiles(directory=DIRETORIO_FRONTEND, html=True), name="frontend")

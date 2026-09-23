@@ -1,6 +1,6 @@
 # MovieHustler
 
-Locadora de filmes virtual, estilo Blockbuster anos 2000 com uma cara de serviço de streaming moderno. Projeto full-stack: API em Python (FastAPI + PostgreSQL) e frontend em JavaScript puro (ES Modules, sem framework/build step).
+Locadora de filmes virtual, estilo Blockbuster anos 2000 com uma cara de serviço de streaming moderno. Projeto full-stack: API em Python (FastAPI + PostgreSQL) e frontend em JavaScript puro (ES Modules, sem framework/build step) — os dois servidos pelo mesmo processo FastAPI, mesma origem.
 
 ## Funcionalidades
 
@@ -18,8 +18,6 @@ Locadora de filmes virtual, estilo Blockbuster anos 2000 com uma cara de serviç
 - **Frontend:** JavaScript (ES Modules), HTML e CSS puros — sem framework nem bundler.
 
 ## Como rodar
-
-### Backend
 
 Pré-requisito: um projeto Postgres no [Supabase](https://supabase.com) (plano free serve). Pegue a connection string do **Transaction pooler** (botão "Connect" no topo do projeto → aba de URI → modo "Transaction", porta `6543`).
 
@@ -44,24 +42,13 @@ TMDB_API_KEY=pegue_a_sua_gratis_em_themoviedb.org/settings/api
 ./.venv/Scripts/python -m uvicorn app.main:app --reload
 ```
 
-API em `http://localhost:8000`, docs em `http://localhost:8000/docs`.
+Um único servidor em `http://localhost:8000` — a própria API serve o site (`app.mount()` em `app/main.py`, ver "Estrutura" abaixo). Docs automáticas do Swagger em `http://localhost:8000/docs`, health-check em `http://localhost:8000/status`.
 
 Para acessar o painel admin, crie uma conta normal pelo site e promova ela:
 
 ```bash
 ./.venv/Scripts/python tornar_admin.py seu-email@exemplo.com
 ```
-
-### Frontend
-
-Os módulos ES exigem servir os arquivos por HTTP (não abrir `index.html` direto):
-
-```bash
-cd frontend
-python -m http.server 5500
-```
-
-Acesse `http://localhost:5500/public/index.html`.
 
 ## Estrutura
 
@@ -73,14 +60,14 @@ backend/
 │   ├── routes/         # endpoints da API
 │   ├── security.py      # hash de senha e JWT
 │   ├── dependencies.py   # checagem de usuário logado / admin
-│   └── recibo.py           # geração do PDF do recibo
+│   ├── recibo.py           # geração do PDF do recibo
+│   └── main.py               # monta a API e, por último, o frontend estático (frontend/)
+├── frontend/              # frontend — servido pela própria API, mesma origem
+│   ├── index.html         # página única (site + admin embutido)
+│   └── src/                 # módulos JS (um por responsabilidade) + CSS
 ├── migrar.py           # cria/atualiza o schema no Postgres (rodar à mão)
 ├── seed.py            # popula o banco com dados fictícios
 └── popular_filmes_tmdb.py  # popula o banco com filmes reais da TMDb
-
-frontend/
-├── public/index.html   # página única (site + admin embutido)
-└── src/                  # módulos JS (um por responsabilidade) + CSS
 ```
 
 ## Licença
