@@ -1,5 +1,7 @@
 # Tudo que envolve senha e autenticação (login) do usuário mora aqui.
+import hashlib
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -41,3 +43,22 @@ def decodificar_token(token: str) -> dict:
     # estiver vencido ou tiver sido adulterado — quem chama trata isso
     # (ver app/dependencies.py) pra devolver 401 pro frontend.
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITMO])
+
+
+def gerar_token_redefinicao() -> str:
+    # secrets.token_urlsafe (não random/uuid) porque é a função do Python
+    # pensada especificamente pra gerar segredos - usa uma fonte de
+    # aleatoriedade segura (os.urandom por baixo). 32 bytes = praticamente
+    # impossível de adivinhar ou forçar por tentativa e erro.
+    return secrets.token_urlsafe(32)
+
+
+def hash_token_redefinicao(token: str) -> str:
+    # SHA-256 aqui, não bcrypt: bcrypt é lento DE PROPÓSITO pra dificultar
+    # forçar senhas curtas escolhidas por humanos (baixa entropia). Esse
+    # token já nasce aleatório e com entropia altíssima (32 bytes) - forçar
+    # ele por tentativa e erro já é inviável independente da velocidade do
+    # hash. SHA-256 aqui cumpre só o papel de "não guardar o segredo em
+    # texto puro no banco" (mesmo motivo do hash_senha), sem o custo extra
+    # do bcrypt, que não compra nenhuma segurança a mais nesse caso.
+    return hashlib.sha256(token.encode()).hexdigest()

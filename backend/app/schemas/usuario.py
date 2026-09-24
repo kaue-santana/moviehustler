@@ -54,3 +54,15 @@ class Token(BaseModel):
     # (ver frontend/src/auth.js) pra mandar em "Authorization: Bearer <token>".
     access_token: str
     token_type: str
+
+
+class EsqueciSenhaRequest(BaseModel):
+    email: EmailStr
+
+
+class RedefinirSenhaRequest(BaseModel):
+    # token vem do link que a pessoa recebeu por e-mail (ver query string em
+    # redefinir-senha.html) — não tem relação com o JWT de login, é o token
+    # de uso único gerado por gerar_token_redefinicao().
+    token: str
+    senha_nova: str

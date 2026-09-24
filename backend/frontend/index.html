@@ -162,7 +162,7 @@
         <span class="conta-marca-watch">MOVIE</span><span class="conta-marca-ust">HUSTLER</span>
       </div>
 
-      <div class="conta-abas">
+      <div class="conta-abas" id="conta-abas">
         <button type="button" class="aba-conta ativa" id="aba-login">Entrar</button>
         <button type="button" class="aba-conta" id="aba-cadastro">Criar conta</button>
       </div>
@@ -180,8 +180,23 @@
           <input type="password" id="login-senha" placeholder="••••••••" required />
         </div>
 
+        <button type="button" class="link-esqueci-senha" id="botao-esqueci-senha">Esqueci minha senha</button>
+
         <button type="submit" class="botao-conta-enviar">Entrar</button>
         <p class="mensagem-conta" id="login-mensagem" hidden></p>
+      </form>
+
+      <form class="form-conta" id="form-esqueci-senha" hidden>
+        <p class="conta-subtitulo">Informe seu e-mail — se tiver uma conta, mandamos um link pra redefinir a senha.</p>
+
+        <div class="campo-conta">
+          <label for="esqueci-email">E-mail</label>
+          <input type="email" id="esqueci-email" placeholder="voce@email.com" required />
+        </div>
+
+        <button type="submit" class="botao-conta-enviar">Enviar link</button>
+        <button type="button" class="link-esqueci-senha" id="botao-voltar-login">Voltar para o login</button>
+        <p class="mensagem-conta" id="esqueci-mensagem" hidden></p>
       </form>
 
       <form class="form-conta" id="form-cadastro" hidden>

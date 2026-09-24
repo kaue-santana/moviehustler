@@ -488,6 +488,23 @@ body {
   filter: brightness(0.96);
 }
 
+.link-esqueci-senha {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--cor-acento);
+  font-size: 0.8rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.link-esqueci-senha:hover {
+  text-decoration: underline;
+}
+
 .gate-caixa {
   text-align: center;
 }

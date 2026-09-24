@@ -127,6 +127,32 @@ export async function login(email, senha) {
   return usuario;
 }
 
+export async function esqueciSenha(email) {
+  // Não confere resposta.ok nem lança em erro de propósito: a rota sempre
+  // devolve a mesma mensagem genérica (ver POST /auth/esqueci-senha), então
+  // não existe "sucesso" vs "falha" visível daqui pra fora — só uma falha de
+  // rede de verdade chegaria a interromper isso, e quem chama já trata esse
+  // caso raro mostrando a mesma mensagem mesmo assim.
+  await fetch(`${URL_API}/auth/esqueci-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function redefinirSenha(token, senhaNova) {
+  const resposta = await fetch(`${URL_API}/auth/redefinir-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, senha_nova: senhaNova }),
+  });
+
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => ({}));
+    throw new Error(erro.detail || "Não foi possível redefinir a senha.");
+  }
+}
+
 export async function atualizarConta(dados) {
   const resposta = await fetchAutenticado(`${URL_API}/auth/me`, {
     method: "PUT",
