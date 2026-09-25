@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean
 from app.database import Base
 
 
@@ -28,13 +28,3 @@ class Usuario(Base):
     endereco_cidade = Column(String, nullable=True)
     endereco_estado = Column(String, nullable=True)  # sigla da UF, ex: "SP"
     endereco_cep = Column(String, nullable=True)
-
-    # "Esqueci minha senha": mesmo princípio de nunca guardar um segredo em
-    # texto puro que já vale pra senha_hash — aqui guardamos o HASH do token
-    # de redefinição, não o token em si. Se o banco vazar, ninguém consegue
-    # usar essas colunas pra trocar a senha de alguém (precisaria do token
-    # original, que só existe no link mandado por email). token_redefinicao_expira
-    # é o que torna o link de "uso único" na prática: depois de expirado (ou
-    # usado — ver redefinir_senha em app/routes/auth.py), o hash é apagado.
-    token_redefinicao_hash = Column(String, nullable=True)
-    token_redefinicao_expira = Column(DateTime, nullable=True)

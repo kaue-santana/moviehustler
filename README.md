@@ -5,16 +5,16 @@ Locadora de filmes virtual, estilo Blockbuster anos 2000 com uma cara de serviç
 ## Funcionalidades
 
 - **Catálogo real**, importado da [TMDb](https://www.themoviedb.org/) (pôster, logo, sinopse, direção, faixa etária, streamings disponíveis no Brasil), exibido em fileiras roláveis por gênero (estilo Netflix/Prime Video) ou em grade quando há filtro/busca ativos.
-- **Conta de usuário** com cadastro/login (JWT), edição dos próprios dados (nome, e-mail, senha com confirmação da senha atual, CPF e endereço), redefinição de senha por e-mail ("esqueci minha senha") e tema claro/escuro/automático.
+- **Conta de usuário** com cadastro/login (JWT), edição dos próprios dados (nome, e-mail, senha com confirmação da senha atual, CPF e endereço) e tema claro/escuro/automático.
 - **Carrinho e aluguel real**: adicionar ao carrinho é local e reversível; "Finalizar aluguel" é quem de fato registra o aluguel na API, agência por agência.
-- **Recibo em PDF**, gerado no backend (ReportLab) a cada finalização de carrinho e exibido num modal — comprovante interno, sem valor fiscal (não é NFS-e). Preço congelado no momento da compra (não muda se o valor do filme mudar depois) e reaberto a qualquer momento em "Meus Pedidos".
+- **Recibo em PDF**, gerado no backend (ReportLab) a cada finalização de carrinho e exibido num modal — comprovante interno, sem valor fiscal (não é NFS-e).
 - **Favoritos sincronizados** com a conta (persistem entre dispositivos, com merge automático do que foi favoritado como visitante).
 - **Painel administrativo** embutido na mesma página (atalho `M`, protegido por permissão de admin no servidor), com gráficos e relatórios de faturamento, e gestão de clientes, vendas, produtos e devoluções — com paginação e busca.
 - Agências fictícias ambientadas em bairros reais de Florianópolis/SC.
 
 ## Stack
 
-- **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL, autenticação JWT (`pyjwt`), hash de senha com `bcrypt`, geração de PDF com ReportLab, envio de e-mail via SMTP do Gmail (biblioteca padrão `smtplib`, sem dependência extra).
+- **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL, autenticação JWT (`python-jose`), hash de senha com `bcrypt`, geração de PDF com ReportLab.
 - **Frontend:** JavaScript (ES Modules), HTML e CSS puros — sem framework nem bundler.
 
 ## Como rodar
@@ -33,8 +33,6 @@ Crie um `.env` a partir de `.env.example`:
 DATABASE_URL=postgresql://postgres.xxxxxxxx:sua_senha@aws-0-<região>.pooler.supabase.com:6543/postgres
 JWT_SECRET_KEY=gere_uma_chave_aleatoria_com_python_-c_"import_secrets;print(secrets.token_hex(32))"
 TMDB_API_KEY=pegue_a_sua_gratis_em_themoviedb.org/settings/api
-GMAIL_EMAIL=conta_gmail_que_envia_o_email_de_redefinicao@gmail.com
-GMAIL_APP_SENHA=senha_de_app_de_16_caracteres_gerada_em_myaccount.google.com/apppasswords
 ```
 
 ```bash
@@ -60,14 +58,12 @@ backend/
 │   ├── models/       # tabelas SQLAlchemy (filme, agência, aluguel, pedido, usuário, favorito, devolução)
 │   ├── schemas/       # formatos de entrada/saída (Pydantic)
 │   ├── routes/         # endpoints da API
-│   ├── security.py      # hash de senha, JWT e token de redefinição de senha
+│   ├── security.py      # hash de senha e JWT
 │   ├── dependencies.py   # checagem de usuário logado / admin
 │   ├── recibo.py           # geração do PDF do recibo
-│   ├── email.py              # envio de e-mail (redefinição de senha) via SMTP do Gmail
-│   └── main.py                 # monta a API e, por último, o frontend estático (frontend/)
+│   └── main.py               # monta a API e, por último, o frontend estático (frontend/)
 ├── frontend/              # frontend — servido pela própria API, mesma origem
 │   ├── index.html         # página única (site + admin embutido)
-│   ├── redefinir-senha.html # destino do link de "esqueci minha senha" (fora da SPA)
 │   └── src/                 # módulos JS (um por responsabilidade) + CSS
 ├── migrar.py           # cria/atualiza o schema no Postgres (rodar à mão)
 ├── seed.py            # popula o banco com dados fictícios

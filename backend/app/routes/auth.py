@@ -1,30 +1,14 @@
-from datetime import datetime, timedelta
-
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_usuario_atual
-from app.email import enviar_email_redefinicao
 from app.models.usuario import Usuario
-from app.schemas.usuario import (
-    EsqueciSenhaRequest,
-    RedefinirSenhaRequest,
-    UsuarioCreate,
-    UsuarioAtualizar,
-    UsuarioOut,
-    Token,
-)
-from app.security import gerar_token_redefinicao, hash_senha, hash_token_redefinicao, verificar_senha, criar_token
+from app.schemas.usuario import UsuarioCreate, UsuarioAtualizar, UsuarioOut, Token
+from app.security import hash_senha, verificar_senha, criar_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# Link de redefinição válido por 30 minutos — curto de propósito: quanto
-# maior a janela, maior o tempo em que um e-mail interceptado (ou um link
-# esquecido aberto numa aba) pode ser usado por outra pessoa pra trocar a
-# senha da conta.
-MINUTOS_VALIDADE_TOKEN_REDEFINICAO = 30
 
 
 @router.post("/registrar", response_model=UsuarioOut)
@@ -117,47 +101,3 @@ def atualizar_usuario_atual(
     db.commit()
     db.refresh(usuario_atual)
     return usuario_atual
-
-
-@router.post("/esqueci-senha")
-def esqueci_senha(dados: EsqueciSenhaRequest, db: Session = Depends(get_db)):
-    usuario = db.query(Usuario).filter(Usuario.email == dados.email).first()
-
-    # Só gera/manda o token se o e-mail existir de verdade — mas a resposta
-    # da rota é IDÊNTICA nos dois casos (ver return no final). Se a mensagem
-    # mudasse ("e-mail não encontrado" vs "e-mail enviado"), essa rota vira
-    # uma forma de descobrir, um e-mail de cada vez, quais endereços têm
-    # conta no site — o mesmo cuidado já tomado no login (capítulo 09/16).
-    if usuario:
-        token = gerar_token_redefinicao()
-        usuario.token_redefinicao_hash = hash_token_redefinicao(token)
-        usuario.token_redefinicao_expira = datetime.utcnow() + timedelta(
-            minutes=MINUTOS_VALIDADE_TOKEN_REDEFINICAO
-        )
-        db.commit()
-        enviar_email_redefinicao(usuario.email, token)
-
-    return {"mensagem": "Se esse e-mail estiver cadastrado, enviamos um link de redefinição."}
-
-
-@router.post("/redefinir-senha")
-def redefinir_senha(dados: RedefinirSenhaRequest, db: Session = Depends(get_db)):
-    # Erro genérico de propósito: "token não existe" e "token expirado" viram
-    # a mesma mensagem pro cliente, sem dar pista de qual dos dois aconteceu.
-    erro_token = HTTPException(status_code=400, detail="Link inválido ou expirado")
-
-    hash_recebido = hash_token_redefinicao(dados.token)
-    usuario = db.query(Usuario).filter(Usuario.token_redefinicao_hash == hash_recebido).first()
-    if not usuario:
-        raise erro_token
-    if usuario.token_redefinicao_expira is None or usuario.token_redefinicao_expira < datetime.utcnow():
-        raise erro_token
-
-    usuario.senha_hash = hash_senha(dados.senha_nova)
-    # Apaga o token depois de usado — é isso que impede o mesmo link de
-    # funcionar duas vezes (ver comentário em app/models/usuario.py).
-    usuario.token_redefinicao_hash = None
-    usuario.token_redefinicao_expira = None
-    db.commit()
-
-    return {"mensagem": "Senha redefinida com sucesso."}

@@ -1,18 +1,13 @@
-import { registrar, login, esqueciSenha } from "./auth.js";
+import { registrar, login } from "./auth.js";
 
 const contaFundo = document.getElementById("conta-fundo");
 const contaFechar = document.getElementById("conta-fechar");
-const contaAbas = document.getElementById("conta-abas");
 const abaLogin = document.getElementById("aba-login");
 const abaCadastro = document.getElementById("aba-cadastro");
 const formLogin = document.getElementById("form-login");
 const formCadastro = document.getElementById("form-cadastro");
-const formEsqueciSenha = document.getElementById("form-esqueci-senha");
 const loginMensagem = document.getElementById("login-mensagem");
 const cadastroMensagem = document.getElementById("cadastro-mensagem");
-const esqueciMensagem = document.getElementById("esqueci-mensagem");
-const botaoEsqueciSenha = document.getElementById("botao-esqueci-senha");
-const botaoVoltarLogin = document.getElementById("botao-voltar-login");
 const campoSenhaCadastro = document.getElementById("cadastro-senha");
 const medidorSenha = document.getElementById("medidor-senha");
 const medidorPreenchimento = document.getElementById("medidor-senha-preenchimento");
@@ -61,11 +56,6 @@ function atualizarMedidorSenha() {
 campoSenhaCadastro.addEventListener("input", atualizarMedidorSenha);
 
 export function abrirConta(aba = "login", mensagem) {
-  // Reseta pra fora da view "esqueci minha senha" sempre que o modal reabre
-  // — sem isso, fechar o modal ali e reabrir (ex: clicando em "Entrar" de
-  // novo) deixaria a pessoa presa na tela errada.
-  formEsqueciSenha.hidden = true;
-  contaAbas.hidden = false;
   mostrarAba(aba);
   contaFundo.classList.add("aberto");
 
@@ -99,45 +89,6 @@ contaFundo.addEventListener("click", (evento) => {
 
 abaLogin.addEventListener("click", () => mostrarAba("login"));
 abaCadastro.addEventListener("click", () => mostrarAba("cadastro"));
-
-// "Esqueci minha senha" não é uma terceira aba de verdade — é um desvio de
-// dentro do login, então esconde as abas (Entrar/Criar conta) enquanto
-// estiver nessa tela, em vez de deixá-las visíveis sem fazer sentido ali.
-function mostrarEsqueciSenha() {
-  contaAbas.hidden = true;
-  formLogin.hidden = true;
-  formCadastro.hidden = true;
-  formEsqueciSenha.hidden = false;
-  esqueciMensagem.hidden = true;
-}
-
-function voltarParaLogin() {
-  formEsqueciSenha.hidden = true;
-  contaAbas.hidden = false;
-  mostrarAba("login");
-}
-
-botaoEsqueciSenha.addEventListener("click", mostrarEsqueciSenha);
-botaoVoltarLogin.addEventListener("click", voltarParaLogin);
-
-formEsqueciSenha.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  const email = document.getElementById("esqueci-email").value;
-  const botaoEnviar = formEsqueciSenha.querySelector("button[type=submit]");
-
-  botaoEnviar.disabled = true;
-  await esqueciSenha(email);
-  botaoEnviar.disabled = false;
-
-  // Mensagem sempre igual, exista ou não o e-mail — o mesmo cuidado de
-  // privacidade da rota (ver app/routes/auth.py) precisa valer aqui também,
-  // senão a tela vaza a informação que a API tomou cuidado de esconder.
-  esqueciMensagem.textContent =
-    "Se esse e-mail estiver cadastrado, enviamos um link de redefinição. Confira sua caixa de entrada.";
-  esqueciMensagem.className = "mensagem-conta mensagem-conta-sucesso";
-  esqueciMensagem.hidden = false;
-  formEsqueciSenha.reset();
-});
 
 formLogin.addEventListener("submit", async (evento) => {
   evento.preventDefault();

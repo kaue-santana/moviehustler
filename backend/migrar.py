@@ -35,8 +35,6 @@ MIGRACOES_MANUAIS = [
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco_cidade VARCHAR",
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco_estado VARCHAR",
     "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco_cep VARCHAR",
-    "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_redefinicao_hash VARCHAR",
-    "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_redefinicao_expira TIMESTAMP",
 ]
 
 
