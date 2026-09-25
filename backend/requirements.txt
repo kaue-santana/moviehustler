@@ -6,6 +6,6 @@ pydantic[email]
 psycopg2-binary
 python-dotenv
 bcrypt
-pyjwt==2.14.0
+pyjwt
 python-multipart
 reportlab
